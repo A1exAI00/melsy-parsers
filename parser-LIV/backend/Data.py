@@ -99,7 +99,7 @@ class Data:
             # Try to change Duration from "us" to "ms"
             if i == 0:  # "Duration, us"
                 try:
-                    value = str(float(value)/1000)
+                    value = str(round(float(value)/1000, ndigits=2))
                     self.additional_data_names[i] = "Duration, ms"
                 except:
                     pass
