@@ -60,7 +60,6 @@ class MainWindow(QMainWindow):
         box.addWidget(self.extention_edit)
         setup_window_layout.addLayout(box)
 
-
         # Create "add source" and "clear" buttons
         box = QHBoxLayout()
         self.add_source_button = QPushButton("Add source")
@@ -297,7 +296,8 @@ class MainWindow(QMainWindow):
         for (i, value) in enumerate(array):
             if "nan" in value.lower():
                 value = "NaN"
-            self.result_table.item(self.result_table.rowCount()-1, i).setText(value)
+            self.result_table.item(
+                self.result_table.rowCount()-1, i).setText(value)
         return
 
     def clear_setup_table_slot(self) -> None:
