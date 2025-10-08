@@ -248,6 +248,7 @@ class MainWindow(QMainWindow):
             # Get part name from GUI, add to data
             name_strs = [self.setup_table.item(
                 i, 2+j).text() for j in range(3)]
+            name_strs = [each for each in name_strs if each]
             name_str = "-".join(name_strs)
             data.add_nameing(name_str)
 
