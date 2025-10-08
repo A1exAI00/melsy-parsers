@@ -254,6 +254,7 @@ class MainWindow(QMainWindow):
         # Edit table
         for (data_i, data) in enumerate(datas):
             # Append additional data
+            self.append_to_results_table((data.naming_data_name, data.naming_data_value))
             for (name, value) in zip(data.additional_data_names, data.additional_data_values):
                 # Skip naming if inchecked
                 if (name == "Name") and (not self.add_naming_checkbox.isChecked()):
