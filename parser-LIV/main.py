@@ -73,10 +73,47 @@ class MainWindow(QMainWindow):
 
         # Create table widget
         self.setup_table = QTableWidget()
-        self.setup_table.setRowCount(0)
+        self.setup_table.setRowCount(1)
         self.setup_table.setColumnCount(5)
         self.setup_table.setHorizontalHeaderLabels(
             ["Path", "", "Type prod", "Date", "№ Rad"])
+        
+        type_prod_overwrite_widget = QWidget()
+        type_prod_overwrite_box = QHBoxLayout()
+        type_prod_overwrite_box.setContentsMargins(0, 0, 0, 0)
+        self.type_prod_overwrite_edit = QLineEdit()
+        self.type_prod_overwrite_edit.setPlaceholderText("2525")
+        type_prod_overwrite_button = QPushButton("Replace")
+        type_prod_overwrite_button.clicked.connect(self.type_prod_overwrite_slot)
+        type_prod_overwrite_box.addWidget(self.type_prod_overwrite_edit)
+        type_prod_overwrite_box.addWidget(type_prod_overwrite_button)
+        type_prod_overwrite_widget.setLayout(type_prod_overwrite_box)
+        self.setup_table.setCellWidget(0, 2, type_prod_overwrite_widget)
+
+        date_overwrite_widget = QWidget()
+        date_overwrite_box = QHBoxLayout()
+        date_overwrite_box.setContentsMargins(0, 0, 0, 0)
+        self.date_overwrite_edit = QLineEdit()
+        self.date_overwrite_edit.setPlaceholderText("9999")
+        date_overwrite_button = QPushButton("Replace")
+        date_overwrite_button.clicked.connect(self.date_overwrite_slot)
+        date_overwrite_box.addWidget(self.date_overwrite_edit)
+        date_overwrite_box.addWidget(date_overwrite_button)
+        date_overwrite_widget.setLayout(date_overwrite_box)
+        self.setup_table.setCellWidget(0, 3, date_overwrite_widget)
+
+        n_rad_overwrite_widget = QWidget()
+        n_rad_overwrite_box = QHBoxLayout()
+        n_rad_overwrite_box.setContentsMargins(0, 0, 0, 0)
+        self.n_rad_overwrite_edit = QLineEdit()
+        self.n_rad_overwrite_edit.setPlaceholderText("01")
+        n_rad_overwrite_button = QPushButton("Replace")
+        n_rad_overwrite_button.clicked.connect(self.n_rad_overwrite_slot)
+        n_rad_overwrite_box.addWidget(self.n_rad_overwrite_edit)
+        n_rad_overwrite_box.addWidget(n_rad_overwrite_button)
+        n_rad_overwrite_widget.setLayout(n_rad_overwrite_box)
+        self.setup_table.setCellWidget(0, 4, n_rad_overwrite_widget)
+
         self.add_row_slot()
         setup_window_layout.addWidget(self.setup_table)
 
@@ -194,7 +231,7 @@ class MainWindow(QMainWindow):
 
     def start_slot(self) -> None:
         datas: List[Data] = []
-        for i in range(self.setup_table.rowCount()):
+        for i in range(1, self.setup_table.rowCount()):
             # Get filepath from GUI
             item = self.setup_table.item(i, 0)
             filepath = item.text()
@@ -283,7 +320,7 @@ class MainWindow(QMainWindow):
 
     def quick_clipboard_slot(self) -> None:
         tmp = []
-        for i in range(self.result_table.rowCount()):
+        for i in range(1, self.result_table.rowCount()):
             subtmp = []
             for j in range(self.result_table.columnCount()):
                 value = self.result_table.item(i, j).text()
@@ -302,11 +339,29 @@ class MainWindow(QMainWindow):
         return
 
     def clear_setup_table_slot(self) -> None:
-        for i in range(self.setup_table.rowCount()):
+        for i in range(1, self.setup_table.rowCount()):
             for j in range(self.setup_table.columnCount()):
                 item = self.setup_table.item(i, j)
                 if isinstance(item, QTableWidgetItem):
                     item.setText("")
+        return
+    
+    def type_prod_overwrite_slot(self) -> None:
+        value = self.type_prod_overwrite_edit.text()
+        for i in range(1, self.setup_table.rowCount()):
+            self.setup_table.item(i, 2).setText(value)
+        return
+    
+    def date_overwrite_slot(self) -> None:
+        value = self.date_overwrite_edit.text()
+        for i in range(1, self.setup_table.rowCount()):
+            self.setup_table.item(i, 3).setText(value)
+        return
+    
+    def n_rad_overwrite_slot(self) -> None:
+        value = self.n_rad_overwrite_edit.text()
+        for i in range(1, self.setup_table.rowCount()):
+            self.setup_table.item(i, 4).setText(value)
         return
 
 
