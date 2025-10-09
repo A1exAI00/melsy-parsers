@@ -52,7 +52,7 @@ class Data:
         return (len(self.LIV) < 2)
 
     def read_lines_from_file(self) -> None:
-        with open(self.filepath, "r") as file:
+        with open(self.filepath, "r", errors="ignore") as file:
             self.lines = file.readlines()
         return
     
