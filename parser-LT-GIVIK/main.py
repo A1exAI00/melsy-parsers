@@ -343,7 +343,7 @@ class MainWindow(QMainWindow):
 
     def quick_clipboard_slot(self) -> None:
         tmp = []
-        for i in range(1, self.result_table.rowCount()):
+        for i in range(self.result_table.rowCount()):
             subtmp = []
             for j in range(self.result_table.columnCount()):
                 value = self.result_table.item(i, j).text()
