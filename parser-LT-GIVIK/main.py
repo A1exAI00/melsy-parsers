@@ -19,7 +19,7 @@ from matplotlib.ticker import MultipleLocator, AutoMinorLocator
 from backend.Data import Data
 
 
-mpl.rcParams['savefig.format'] = 'pdf'  # or 'png', 'svg', 'jpg', etc.
+mpl.rcParams['savefig.format'] = 'png'  # or 'png', 'svg', 'jpg', 'pdf' etc.
 
 
 class MplCanvas(FigureCanvas):
