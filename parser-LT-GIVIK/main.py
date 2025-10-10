@@ -7,7 +7,7 @@ import re
 from PySide6.QtWidgets import (
     QApplication, QMainWindow, QTableWidget, QTableWidgetItem, QVBoxLayout,
     QHBoxLayout, QWidget, QMdiArea, QMdiSubWindow, QComboBox, QLineEdit,
-    QPushButton, QFileDialog, QCheckBox, QLabel
+    QPushButton, QFileDialog, QCheckBox, QLabel, QGridLayout
 )
 from PySide6.QtGui import QAction
 import clipboard as clip
@@ -15,7 +15,7 @@ import matplotlib as mpl
 from matplotlib.backends.backend_qtagg import FigureCanvas
 from matplotlib.backends.backend_qtagg import NavigationToolbar2QT as NavigationToolbar
 from matplotlib.figure import Figure
-from matplotlib.ticker import MultipleLocator, AutoMinorLocator
+from matplotlib.ticker import MultipleLocator, AutoMinorLocator, FixedLocator, AutoLocator
 import mplcursors
 
 from backend.Data import Data
@@ -453,6 +453,15 @@ class MainWindow(QMainWindow):
         plot_window_widget.setLayout(plot_window_layout)
         self.plot_window.setWidget(plot_window_widget)
 
+        grid_layout_edits = QGridLayout()
+        x_multiple_locator_edit = QLineEdit(placeholderText="100")
+        y_multiple_locator_edit = QLineEdit(placeholderText="5")
+        grid_layout_edits.addWidget(QLabel("X Axis Multiple Locator"), 0, 0)
+        grid_layout_edits.addWidget(QLabel("Y Axis Multiple Locator"), 1, 0)
+        grid_layout_edits.addWidget(x_multiple_locator_edit, 0, 1)
+        grid_layout_edits.addWidget(y_multiple_locator_edit, 1, 1)
+        plot_window_layout.addLayout(grid_layout_edits)
+
         sc = MplCanvas(self, width=5, height=4, dpi=100)
         toolbar = ModifiedToolbar(sc, None, self.plot_window)
         plot_window_layout.addWidget(toolbar)
@@ -464,16 +473,40 @@ class MainWindow(QMainWindow):
         sc.axes.set_xlabel("Reletive time, h")
         sc.axes.set_ylabel("Power (avg), W")
 
+        lines = []
         for data in datas:
             X_data = data.LT["Reletive time, h"]
             Y_data = data.LT["Power (avg), W"]
             label = data.naming_data_value
-            sc.axes.plot(X_data, Y_data, linewidth=1, label=label)
+            line = sc.axes.plot(X_data, Y_data, linewidth=1, label=label)
+            lines.append(line)
 
         sc.axes.legend()
         sc.axes.xaxis.set_minor_locator(AutoMinorLocator(10))
         sc.axes.yaxis.set_minor_locator(AutoMinorLocator(10))
         sc.fig.tight_layout()
+
+        def tmp_locator_changed_slot():
+            X_str = x_multiple_locator_edit.text().strip("\n")
+            if X_str == "":
+                sc.axes.xaxis.set_major_locator(AutoLocator())
+            else:
+                try:
+                    sc.axes.xaxis.set_major_locator(MultipleLocator(int(X_str)))
+                except: 
+                    pass
+
+            Y_str = y_multiple_locator_edit.text().strip("\n")
+            if Y_str == "":
+                sc.axes.yaxis.set_major_locator(AutoLocator())
+            else:
+                try:
+                    sc.axes.yaxis.set_major_locator(MultipleLocator(int(Y_str)))
+                except: 
+                    pass
+            sc.draw()
+        x_multiple_locator_edit.editingFinished.connect(tmp_locator_changed_slot)
+        y_multiple_locator_edit.editingFinished.connect(tmp_locator_changed_slot)
 
         cursor = mplcursors.cursor(sc.axes)
         cursor.connect("add", lambda sel: sel.annotation.set_text(
@@ -483,6 +516,36 @@ class MainWindow(QMainWindow):
                 f"Power = {sel.target[1]:.3f} W",
             ])
         ))
+
+        grid_layout = QGridLayout()
+        plot_window_layout.addLayout(grid_layout)
+
+        columns = 3
+        row, col = 0, 0
+
+        checkboxes = []
+        for (i, data) in enumerate(datas):
+            checkbox = QCheckBox(data.naming_data_value)
+            checkbox.setChecked(True)
+            grid_layout.addWidget(checkbox, row, col)
+            checkboxes.append(checkbox)
+
+            col += 1
+            if col >= columns:
+                col = 0
+                row += 1
+
+        def tmp_slot():
+            for (i, (checkbox, line)) in enumerate(zip(checkboxes, lines)):
+                line[0].set_linestyle(
+                    "solid" if checkbox.isChecked() else "None")
+                line[0].set_label(
+                    datas[i].naming_data_value if checkbox.isChecked() else "")
+                sc.axes.legend()
+                sc.draw()
+
+        for (i, data) in enumerate(datas):
+            checkboxes[i].stateChanged.connect(tmp_slot)
 
         self.plot_window.show()
         return
