@@ -9,6 +9,7 @@ from PySide6.QtWidgets import (
     QHBoxLayout, QWidget, QMdiArea, QMdiSubWindow, QComboBox, QLineEdit,
     QPushButton, QFileDialog, QCheckBox, QLabel
 )
+from PySide6.QtGui import QAction
 import clipboard as clip
 import matplotlib as mpl
 from matplotlib.backends.backend_qtagg import FigureCanvas
@@ -65,19 +66,45 @@ class ModifiedToolbar(NavigationToolbar):
         return
 
 
+class ModifiedQMdiSubwindow(QMdiSubWindow):
+    def __init__(self, mainwindow: "MainWindow"):
+        self.mainwindow = mainwindow
+        super().__init__()
+        return
+
+    def closeEvent(self, closeEvent):
+        self.mainwindow.status = "Ready"
+        self.mainwindow.plot_window.close()
+        return super().closeEvent(closeEvent)
+
+
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.window_title = "melsytech LT parser"
+        self.status = "Ready"
 
     def setup_ui(self):
-        self.setWindowTitle("Simple Table Example")
+        self.setWindowTitle(self.window_title)
         self.setGeometry(100, 100, 1600, 800)
 
-        # Create Mdi Area
         self.mdi = QMdiArea()
         self.setCentralWidget(self.mdi)
 
+        self.create_menubar()
+        self.create_setup_window()
+        return
+
+    def create_menubar(self):
+        menubar = self.menuBar()
+
+        file_menu = menubar.addMenu("&Click me!")
+
+        new_action = QAction("&Open setup window", self)
+        new_action.triggered.connect(self.create_setup_window)
+        file_menu.addAction(new_action)
+
+    def create_setup_window(self) -> None:
         # Add subwindow to mdi area
         self.setup_window = QMdiSubWindow()
         self.setup_window.setWindowTitle("Setup window")
@@ -127,8 +154,7 @@ class MainWindow(QMainWindow):
         self.setup_table = QTableWidget()
         self.setup_table.setRowCount(1)
         self.setup_table.setColumnCount(3)
-        self.setup_table.setHorizontalHeaderLabels(
-            ["Path", "", "Naming"])
+        self.setup_table.setHorizontalHeaderLabels(["Path", "", "Naming"])
 
         type_prod_overwrite_widget = QWidget()
         type_prod_overwrite_box = QHBoxLayout()
@@ -146,10 +172,8 @@ class MainWindow(QMainWindow):
         self.add_row_slot()
         setup_window_layout.addWidget(self.setup_table)
 
-        # Optional: Adjust column widths
+        # Adjust column width
         self.setup_table.setColumnWidth(0, 1000)  # Name column
-        # self.table.setColumnWidth(1, 80)   # Age column
-        # self.table.setColumnWidth(2, 150)  # City column
 
         self.add_naming_checkbox = QCheckBox("Add naming")
         self.add_naming_checkbox.setChecked(True)
@@ -182,6 +206,8 @@ class MainWindow(QMainWindow):
                 self.edit_path_other_modes(row_index, recursive=False)
             case 2:  # Recursive mode
                 self.edit_path_other_modes(row_index, recursive=True)
+
+        self.status = "Ready"
         return
 
     def edit_path_file_mode(self, row_index: int) -> None:
@@ -250,6 +276,26 @@ class MainWindow(QMainWindow):
         return
 
     def start_slot(self) -> None:
+        match self.status:
+            case "Ready":
+                pass
+            case "Processing" | "Done":
+                return
+
+        self.status = "Processing"
+
+        try:
+            datas = self.parse()
+            self.create_results_table(datas)
+            self.create_results_plot(datas)
+        except:
+            self.status = "Ready"
+            return
+
+        self.status = "Done"
+        return
+
+    def parse(self) -> List[Data]:
         datas: List[Data] = []
         for i in range(1, self.setup_table.rowCount()):
             # Get filepath from GUI
@@ -272,15 +318,12 @@ class MainWindow(QMainWindow):
             data.add_naming(name_str)
 
             datas.append(data)
-
-        self.create_results_table(datas)
-        self.create_results_plot(datas)
-        return
+        return datas
 
     def create_results_table(self, datas: List[Data]) -> None:
 
         # Add new subwindow to Mdi Area
-        self.table_window = QMdiSubWindow()
+        self.table_window = ModifiedQMdiSubwindow(self)
         self.table_window.setWindowTitle("LT table window")
         self.mdi.addSubWindow(self.table_window)
 
@@ -291,10 +334,16 @@ class MainWindow(QMainWindow):
         table_window_widget.setLayout(table_window_layout)
         self.table_window.setWidget(table_window_widget)
 
-        # Create Quick clipboard button
+        # Create "Quick clipboard" and "Show plot" buttons
+        box = QHBoxLayout()
         self.quick_clipboard_button = QPushButton("Quick clipboard")
         self.quick_clipboard_button.clicked.connect(self.quick_clipboard_slot)
-        table_window_layout.addWidget(self.quick_clipboard_button)
+        box.addWidget(self.quick_clipboard_button)
+        self.show_plot_button = QPushButton("Show plot")
+        self.show_plot_button.clicked.connect(
+            lambda: self.create_results_plot(datas))
+        box.addWidget(self.show_plot_button)
+        table_window_layout.addLayout(box)
 
         N_cols = []
         for data in datas:
