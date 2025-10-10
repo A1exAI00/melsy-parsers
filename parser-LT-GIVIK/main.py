@@ -16,6 +16,7 @@ from matplotlib.backends.backend_qtagg import FigureCanvas
 from matplotlib.backends.backend_qtagg import NavigationToolbar2QT as NavigationToolbar
 from matplotlib.figure import Figure
 from matplotlib.ticker import MultipleLocator, AutoMinorLocator
+import mplcursors
 
 from backend.Data import Data
 
@@ -473,6 +474,15 @@ class MainWindow(QMainWindow):
         sc.axes.xaxis.set_minor_locator(AutoMinorLocator(10))
         sc.axes.yaxis.set_minor_locator(AutoMinorLocator(10))
         sc.fig.tight_layout()
+
+        cursor = mplcursors.cursor(sc.axes)
+        cursor.connect("add", lambda sel: sel.annotation.set_text(
+            "\n".join([
+                sel.artist.get_label(),
+                f"Time = {sel.target[0]:.3f} h",
+                f"Power = {sel.target[1]:.3f} W",
+            ])
+        ))
 
         self.plot_window.show()
         return
