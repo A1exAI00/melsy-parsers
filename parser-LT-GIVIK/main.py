@@ -563,8 +563,8 @@ class MainWindow(QMainWindow):
         cursor.connect("add", lambda sel: sel.annotation.set_text(
             "\n".join([
                 sel.artist.get_label(),
-                f"Time = {sel.target[0]:.3f} h",
-                f"Power = {sel.target[1]:.3f} W",
+                f"{X_axis_label} = {sel.target[0]:.3f}",
+                f"{Y_axis_label} = {sel.target[1]:.3f}",
             ])
         ))
 
