@@ -31,12 +31,14 @@ class Data:
         self.GIVIK2_additional_data_names = [
             "Pulse width, ms",
             "Repetition frequency, Hz",
-            "Set operating current, A"
+            "Set operating current, A",
+            "Avg. power(time) slope, W/h"
         ]
         self.GIVIK2_additional_data_patterns = [
             r"Pulse width:\s*([0-9]*\.?[0-9]+)\s*ms",
             r"Repetition frequency:\s*([0-9]*\.?[0-9]+)\s*Hz",
-            r"Set operating current:\s*([0-9]*\.?[0-9]+)\s*A"
+            r"Set operating current:\s*([0-9]*\.?[0-9]+)\s*A",
+            r"$a"
         ]
         self.GIVIK2_additional_data_values: List = [None,] \
             * len(self.GIVIK2_additional_data_patterns)
@@ -88,10 +90,27 @@ class Data:
         match self.GIVIK_version:
             case 1:
                 self.parse_LT_GIVIK1()
+                self.parse_power_slope_GIVIK1()
             case 2:
                 self.parse_LT_GIVIK2()
+                self.parse_power_slope_GIVIK2()
             case _:
                 raise Exception(f"Unknown GIVIK version: {self.GIVIK_version}")
+        
+        return
+    
+    def parse_power_slope_GIVIK1(self) -> None:
+        p1, p2 = self.LT["Power (avg), W"][0], self.LT["Power (avg), W"][-1]
+        t1, t2 = self.LT["Reletive time, h"][0], self.LT["Reletive time, h"][-1]
+        slope = (p2-p1)/(t2-t1)
+        self.additional_data_values[0] = f"{slope:.5E}"
+        return
+    
+    def parse_power_slope_GIVIK2(self) -> None:
+        p1, p2 = self.LT["Power (avg), W"][0], self.LT["Power (avg), W"][-1]
+        t1, t2 = self.LT["Reletive time, h"][0], self.LT["Reletive time, h"][-1]
+        slope = (p2-p1)/(t2-t1)
+        self.additional_data_values[3] = f"{slope:.5E}"
         return
 
     def parse_LT_GIVIK1(self) -> None:
@@ -153,6 +172,7 @@ class Data:
         current_all = []
         voltage_all = []
         power_avg_all = []
+        temperature_all = []
         for section_i in range(len(section_start_is)-1):
             section_start_line_i = LT_start_is[section_i] + 1
             section_end_line_i = LT_end_is[section_i]
@@ -173,6 +193,7 @@ class Data:
                 current_all.append(float(current))
                 voltage_all.append(float(voltage))
                 power_avg_all.append(float(power_avg))
+                temperature_all.append(float(tank_water_temp))
 
         timedeltas = [convert_string_to_timedelta(each) for each in rel_time_str_all]
         float_times = [convert_timedelta_to_hours(each) for each in timedeltas]
@@ -187,6 +208,7 @@ class Data:
         self.LT["Current, A"] = current_all
         self.LT["Voltage, V"] = voltage_all
         self.LT["Power (avg), W"] = power_avg_all
+        self.LT["Tank water temp., C"] = temperature_all
         return
 
     def parse_additional_data(self) -> None:

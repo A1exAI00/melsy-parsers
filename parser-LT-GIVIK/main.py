@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Dict
 import sys
 from os.path import join, dirname, basename, splitext
 from glob import iglob
@@ -83,6 +83,7 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.window_title = "melsytech LT parser"
+        self.plot_windows: Dict[str, QMdiSubWindow] = {}
         self.status = "Ready"
 
     def setup_ui(self):
@@ -285,11 +286,13 @@ class MainWindow(QMainWindow):
 
         self.status = "Processing"
 
+        datas = self.parse()
+        self.create_results_table(datas)
+        self.create_power_plot_window(datas)
         try:
-            datas = self.parse()
-            self.create_results_table(datas)
-            self.create_results_plot(datas)
+            pass
         except:
+            print("error")
             self.status = "Ready"
             return
 
@@ -340,10 +343,22 @@ class MainWindow(QMainWindow):
         self.quick_clipboard_button = QPushButton("Quick clipboard")
         self.quick_clipboard_button.clicked.connect(self.quick_clipboard_slot)
         box.addWidget(self.quick_clipboard_button)
-        self.show_plot_button = QPushButton("Show plot")
+
+        self.show_plot_button = QPushButton("Open power(time) plot")
         self.show_plot_button.clicked.connect(
-            lambda: self.create_results_plot(datas))
+            lambda: self.create_power_plot_window(datas))
         box.addWidget(self.show_plot_button)
+
+        self.show_plot_button = QPushButton("Open voltage(time) plot")
+        self.show_plot_button.clicked.connect(
+            lambda: self.create_voltage_plot_window(datas))
+        box.addWidget(self.show_plot_button)
+
+        self.show_plot_button = QPushButton("Open temperature(time) plot")
+        self.show_plot_button.clicked.connect(
+            lambda: self.create_temperature_plot_window(datas))
+        box.addWidget(self.show_plot_button)
+
         table_window_layout.addLayout(box)
 
         N_cols = []
@@ -363,12 +378,10 @@ class MainWindow(QMainWindow):
         # Edit table
         for (data_i, data) in enumerate(datas):
             # Append additional data
-            self.append_to_results_table(
-                (data.naming_data_name, data.naming_data_value))
+            if not self.add_naming_checkbox.isChecked():
+                self.append_to_results_table(
+                    (data.naming_data_name, data.naming_data_value))
             for (name, value) in zip(data.additional_data_names, data.additional_data_values):
-                # Skip naming if inchecked
-                if (name == "Name") and (not self.add_naming_checkbox.isChecked()):
-                    continue
                 self.append_to_results_table((name, value))
 
             # Append LT data
@@ -439,20 +452,46 @@ class MainWindow(QMainWindow):
             self.setup_table.item(i, 4).setText(value)
         return
 
-    def create_results_plot(self, datas: List[Data]) -> None:
+    def create_plot_window(self, tag: str, role: str, datas: List[Data]) -> None:
+        match role:
+            case "power":
+                this_title = "LT power(time) plot window"
+                X_axis_label = "Reletive time, h"
+                Y_axis_label = "Power (avg), W"
+                sub_x_position, sub_y_position = 1003, 3
+                sub_w, sub_h = 500, 600
+            case "voltage":
+                this_title = "LT voltage(time) plot window"
+                X_axis_label = "Reletive time, h"
+                Y_axis_label = "Voltage, V"
+                datas = list(
+                    filter(lambda each: each.GIVIK_version == 2, datas))
+                sub_x_position, sub_y_position = 1003, 3
+                sub_w, sub_h = 500, 600
+            case "temperature":
+                this_title = "LT temperature(time) plot window"
+                X_axis_label = "Reletive time, h"
+                Y_axis_label = "Tank water temp., C"
+                datas = list(
+                    filter(lambda each: each.GIVIK_version == 2, datas))
+                sub_x_position, sub_y_position = 1003, 3
+                sub_w, sub_h = 500, 600
+
         # Add new subwindow to Mdi Area
-        self.plot_window = QMdiSubWindow()
-        # self.plot_window.
-        self.plot_window.setWindowTitle("LT plot window")
-        self.mdi.addSubWindow(self.plot_window)
+        this_plot_window = QMdiSubWindow()
+        self.plot_windows[tag] = this_plot_window
+        this_plot_window.setWindowTitle(this_title)
+        self.mdi.addSubWindow(this_plot_window)
 
         # Define subwindow layout
-        self.plot_window.setGeometry(3+1000, 3, 500, 500)
+        this_plot_window.setGeometry(
+            sub_x_position, sub_y_position, sub_w, sub_h)
         plot_window_widget = QWidget()
         plot_window_layout = QVBoxLayout()
         plot_window_widget.setLayout(plot_window_layout)
-        self.plot_window.setWidget(plot_window_widget)
+        this_plot_window.setWidget(plot_window_widget)
 
+        # Manual tick locators setup
         grid_layout_edits = QGridLayout()
         x_multiple_locator_edit = QLineEdit(placeholderText="100")
         y_multiple_locator_edit = QLineEdit(placeholderText="5")
@@ -462,52 +501,65 @@ class MainWindow(QMainWindow):
         grid_layout_edits.addWidget(y_multiple_locator_edit, 1, 1)
         plot_window_layout.addLayout(grid_layout_edits)
 
+        # Create canvas backend
         sc = MplCanvas(self, width=5, height=4, dpi=100)
-        toolbar = ModifiedToolbar(sc, None, self.plot_window)
+        toolbar = ModifiedToolbar(sc, None, this_plot_window)
         plot_window_layout.addWidget(toolbar)
         plot_window_layout.addWidget(sc)
 
+        # Add grid, axis lines, axis labels
         sc.axes.grid(True, linestyle='--', alpha=0.7)
         sc.axes.axhline(color="black")
         sc.axes.axvline(color="black")
-        sc.axes.set_xlabel("Reletive time, h")
-        sc.axes.set_ylabel("Power (avg), W")
+        sc.axes.set_xlabel(X_axis_label)
+        sc.axes.set_ylabel(Y_axis_label)
 
+        # Add minor tick locators
+        sc.axes.xaxis.set_minor_locator(AutoMinorLocator(10))
+        sc.axes.yaxis.set_minor_locator(AutoMinorLocator(10))
+
+        # Add plot lines
         lines = []
         for data in datas:
-            X_data = data.LT["Reletive time, h"]
-            Y_data = data.LT["Power (avg), W"]
+            X_data = data.LT[X_axis_label]
+            Y_data = data.LT[Y_axis_label]
             label = data.naming_data_value
             line = sc.axes.plot(X_data, Y_data, linewidth=1, label=label)
             lines.append(line)
 
+        # Add legend
         sc.axes.legend()
-        sc.axes.xaxis.set_minor_locator(AutoMinorLocator(10))
-        sc.axes.yaxis.set_minor_locator(AutoMinorLocator(10))
+
+        # Set tight layout
         sc.fig.tight_layout()
 
+        # Create temporary slot function for manually changing tick locators
         def tmp_locator_changed_slot():
-            X_str = x_multiple_locator_edit.text().strip("\n")
-            if X_str == "":
-                sc.axes.xaxis.set_major_locator(AutoLocator())
-            else:
-                try:
-                    sc.axes.xaxis.set_major_locator(MultipleLocator(int(X_str)))
-                except: 
-                    pass
+            X_Y_strings = (
+                x_multiple_locator_edit.text().strip("\n"),
+                y_multiple_locator_edit.text().strip("\n")
+            )
+            axes = sc.axes.xaxis, sc.axes.yaxis
 
-            Y_str = y_multiple_locator_edit.text().strip("\n")
-            if Y_str == "":
-                sc.axes.yaxis.set_major_locator(AutoLocator())
-            else:
+            # Try to set multiple locators
+            for (string, axis) in zip(X_Y_strings, axes):
                 try:
-                    sc.axes.yaxis.set_major_locator(MultipleLocator(int(Y_str)))
-                except: 
-                    pass
+                    integer = int(string)
+                    axis.set_major_locator(MultipleLocator(integer))
+                except:
+                    axis.set_major_locator(AutoLocator())
+
+            # Force redraw plot
             sc.draw()
-        x_multiple_locator_edit.editingFinished.connect(tmp_locator_changed_slot)
-        y_multiple_locator_edit.editingFinished.connect(tmp_locator_changed_slot)
+            return
 
+        # Connect tick locator signals and slots
+        x_multiple_locator_edit.editingFinished.connect(
+            tmp_locator_changed_slot)
+        y_multiple_locator_edit.editingFinished.connect(
+            tmp_locator_changed_slot)
+
+        # Create cursor for plot
         cursor = mplcursors.cursor(sc.axes)
         cursor.connect("add", lambda sel: sel.annotation.set_text(
             "\n".join([
@@ -517,24 +569,26 @@ class MainWindow(QMainWindow):
             ])
         ))
 
+        # Add checkboxes for each plot to show/hide plot
         grid_layout = QGridLayout()
         plot_window_layout.addLayout(grid_layout)
 
-        columns = 3
-        row, col = 0, 0
-
+        # Generate checkboxes in a grid
         checkboxes = []
+        columns, row, col = 3, 0, 0
         for (i, data) in enumerate(datas):
             checkbox = QCheckBox(data.naming_data_value)
             checkbox.setChecked(True)
             grid_layout.addWidget(checkbox, row, col)
             checkboxes.append(checkbox)
 
+            # Iterate over columns
             col += 1
             if col >= columns:
                 col = 0
                 row += 1
 
+        # Add slot function to update plot visibility
         def tmp_slot():
             for (i, (checkbox, line)) in enumerate(zip(checkboxes, lines)):
                 line[0].set_linestyle(
@@ -542,12 +596,27 @@ class MainWindow(QMainWindow):
                 line[0].set_label(
                     datas[i].naming_data_value if checkbox.isChecked() else "")
                 sc.axes.legend()
-                sc.draw()
+            sc.draw()
+            return
 
+        # Connect visibility slots and signals
         for (i, data) in enumerate(datas):
             checkboxes[i].stateChanged.connect(tmp_slot)
 
-        self.plot_window.show()
+        # Show plot window
+        this_plot_window.show()
+        return
+
+    def create_power_plot_window(self, datas: List[Data]) -> None:
+        self.create_plot_window(tag="1", role="power", datas=datas)
+        return
+
+    def create_voltage_plot_window(self, datas: List[Data]) -> None:
+        self.create_plot_window(tag="2", role="voltage", datas=datas)
+        return
+
+    def create_temperature_plot_window(self, datas: List[Data]) -> None:
+        self.create_plot_window(tag="3", role="temperature", datas=datas)
         return
 
 
