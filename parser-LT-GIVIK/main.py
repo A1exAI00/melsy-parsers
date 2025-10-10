@@ -378,9 +378,8 @@ class MainWindow(QMainWindow):
         # Edit table
         for (data_i, data) in enumerate(datas):
             # Append additional data
-            if not self.add_naming_checkbox.isChecked():
-                self.append_to_results_table(
-                    (data.naming_data_name, data.naming_data_value))
+            if self.add_naming_checkbox.isChecked():
+                self.append_to_results_table(data.get_naming())
             for (name, value) in zip(data.additional_data_names, data.additional_data_values):
                 self.append_to_results_table((name, value))
 
@@ -523,7 +522,7 @@ class MainWindow(QMainWindow):
         for data in datas:
             X_data = data.LT[X_axis_label]
             Y_data = data.LT[Y_axis_label]
-            label = data.naming_data_value
+            label = data.naming_data["Name"]
             line = sc.axes.plot(X_data, Y_data, linewidth=1, label=label)
             lines.append(line)
 
@@ -577,7 +576,7 @@ class MainWindow(QMainWindow):
         checkboxes = []
         columns, row, col = 3, 0, 0
         for (i, data) in enumerate(datas):
-            checkbox = QCheckBox(data.naming_data_value)
+            checkbox = QCheckBox(data.naming_data["Name"])
             checkbox.setChecked(True)
             grid_layout.addWidget(checkbox, row, col)
             checkboxes.append(checkbox)
@@ -594,7 +593,7 @@ class MainWindow(QMainWindow):
                 line[0].set_linestyle(
                     "solid" if checkbox.isChecked() else "None")
                 line[0].set_label(
-                    datas[i].naming_data_value if checkbox.isChecked() else "")
+                    datas[i].naming_data["Name"] if checkbox.isChecked() else "")
                 sc.axes.legend()
             sc.draw()
             return

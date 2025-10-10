@@ -1,4 +1,4 @@
-from typing import List, Dict
+from typing import List, Dict, Tuple
 
 import re
 from datetime import timedelta
@@ -27,24 +27,11 @@ class Data:
         self.LT: Dict = {}
 
         # Additional to LIV data
-        self.GIVIK2_additional_data_section_marker = "###	Operation condition	###"
-        self.GIVIK2_additional_data_names = [
-            "Pulse width, ms",
-            "Repetition frequency, Hz",
-            "Set operating current, A",
-            "Avg. power(time) slope, W/h"
-        ]
-        self.GIVIK2_additional_data_patterns = [
-            r"Pulse width:\s*([0-9]*\.?[0-9]+)\s*ms",
-            r"Repetition frequency:\s*([0-9]*\.?[0-9]+)\s*Hz",
-            r"Set operating current:\s*([0-9]*\.?[0-9]+)\s*A",
-            r"$a"
-        ]
-        self.GIVIK2_additional_data_values: List = [None,] \
-            * len(self.GIVIK2_additional_data_patterns)
+        self.GIVIK1_additional_data_section_marker = r"$a"
+        self.GIVIK2_additional_data_section_marker = r"###	Operation condition	###"
 
-        self.naming_data_name = ""
-        self.naming_data_value = ""
+        # Naming data
+        self.naming_data: Dict[str, str] = {}
 
         self.abs_date_pattern = r"\d{2}\.\d{2}\.\d{4}\s\d{2}:\d{2}:\d{2}"
         self.rel_time_pattern = r"\d+:\d{2}:\d{2}"
@@ -56,9 +43,11 @@ class Data:
         return (self.LT.keys() < 2)
 
     def add_naming(self, value) -> None:
-        self.naming_data_name = "Name"
-        self.naming_data_value = value
+        self.naming_data["Name"] = value
         return
+
+    def get_naming(self) -> Tuple[str, str]:
+        return ("Name", self.naming_data["Name"])
 
     def read_lines_from_file(self) -> None:
         with open(self.filepath, "r", errors="ignore") as file:
@@ -77,13 +66,25 @@ class Data:
 
         match self.GIVIK_version:
             case 1:
-                self.additional_data_names = []
-                self.additional_data_patterns = []
-                self.additional_data_values = []
+                self.additional_data_names = ["Avg. power(time) slope, W/h",]
+                self.additional_data_patterns = [r"$a",]
+                self.additional_data_values = [None,] \
+                    * len(self.additional_data_names)
             case 2:
-                self.additional_data_names = self.GIVIK2_additional_data_names
-                self.additional_data_patterns = self.GIVIK2_additional_data_patterns
-                self.additional_data_values = self.GIVIK2_additional_data_values
+                self.additional_data_names = [
+                    "Pulse width, ms",
+                    "Repetition frequency, Hz",
+                    "Set operating current, A",
+                    "Avg. power(time) slope, W/h"
+                ]
+                self.additional_data_patterns = [
+                    r"Pulse width:\s*([0-9]*\.?[0-9]+)\s*ms",
+                    r"Repetition frequency:\s*([0-9]*\.?[0-9]+)\s*Hz",
+                    r"Set operating current:\s*([0-9]*\.?[0-9]+)\s*A",
+                    r"$a"
+                ]
+                self.additional_data_values = [None,] \
+                    * len(self.additional_data_patterns)
         return
 
     def parse_LT(self) -> None:
@@ -96,16 +97,16 @@ class Data:
                 self.parse_power_slope_GIVIK2()
             case _:
                 raise Exception(f"Unknown GIVIK version: {self.GIVIK_version}")
-        
+
         return
-    
+
     def parse_power_slope_GIVIK1(self) -> None:
         p1, p2 = self.LT["Power (avg), W"][0], self.LT["Power (avg), W"][-1]
         t1, t2 = self.LT["Reletive time, h"][0], self.LT["Reletive time, h"][-1]
         slope = (p2-p1)/(t2-t1)
         self.additional_data_values[0] = f"{slope:.5E}"
         return
-    
+
     def parse_power_slope_GIVIK2(self) -> None:
         p1, p2 = self.LT["Power (avg), W"][0], self.LT["Power (avg), W"][-1]
         t1, t2 = self.LT["Reletive time, h"][0], self.LT["Reletive time, h"][-1]
@@ -124,7 +125,7 @@ class Data:
             raise Exception(
                 f"Could not find LT start in file: {self.filepath}")
 
-        LT_start_line_i = last_line_with_marker + 1  # TODO check the end index
+        LT_start_line_i = last_line_with_marker + 1
         LT_end_line_i = len(self.lines)-1
 
         times_str: List[str] = []
@@ -195,13 +196,16 @@ class Data:
                 power_avg_all.append(float(power_avg))
                 temperature_all.append(float(tank_water_temp))
 
-        timedeltas = [convert_string_to_timedelta(each) for each in rel_time_str_all]
+        timedeltas = [convert_string_to_timedelta(
+            each) for each in rel_time_str_all]
         float_times = [convert_timedelta_to_hours(each) for each in timedeltas]
         float_times = [round(each, ndigits=5) for each in float_times]
         normal_float_times = normalize_time(float_times)
 
-        normal_timedeltas = [convert_hours_float_to_timedelta(each) for each in normal_float_times]
-        normal_time_strings = [convert_timedelta_to_string(each) for each in normal_timedeltas]
+        normal_timedeltas = [convert_hours_float_to_timedelta(
+            each) for each in normal_float_times]
+        normal_time_strings = [convert_timedelta_to_string(
+            each) for each in normal_timedeltas]
 
         self.LT["Reletive time"] = normal_time_strings
         self.LT["Reletive time, h"] = normal_float_times
@@ -225,7 +229,7 @@ class Data:
         return
 
     def parse_additional_data_GIVIK2(self) -> None:
-        for (pattern_i, pattern) in enumerate(self.GIVIK2_additional_data_patterns):
+        for (pattern_i, pattern) in enumerate(self.additional_data_patterns):
             for (line_i, line) in enumerate(self.lines):
                 if re.findall(pattern, line):
                     value = re.findall(self.number_pattern, line)[0]
@@ -266,9 +270,9 @@ def convert_hours_float_to_timedelta(hours: float) -> timedelta:
 def convert_timedelta_to_string(td: timedelta) -> str:
     D, S = td.days, td.seconds
     H = D*24 + S//3600
-    rem_S = S%3600
+    rem_S = S % 3600
     M = rem_S//60
-    rem_S = rem_S%60
-    HMS_strs = [str(H).rjust(2,"0"), str(M).rjust(2,"0"), str(rem_S).rjust(2,"0")]
+    rem_S = rem_S % 60
+    HMS_strs = [str(H).rjust(2, "0"), str(
+        M).rjust(2, "0"), str(rem_S).rjust(2, "0")]
     return ":".join(HMS_strs)
-    
