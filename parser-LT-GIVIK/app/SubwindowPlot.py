@@ -81,21 +81,21 @@ class SubwindowPlot(QMdiSubWindow):
         plot_window_layout.addLayout(grid_layout_edits)
 
         # Create canvas backend
-        sc = MplCanvas(self, width=5, height=4, dpi=100)
-        toolbar = ModifiedToolbar(sc, None)
+        self.canvas = MplCanvas(self, width=5, height=4, dpi=100)
+        toolbar = ModifiedToolbar(self.canvas, None)
         plot_window_layout.addWidget(toolbar)
-        plot_window_layout.addWidget(sc)
+        plot_window_layout.addWidget(self.canvas)
 
         # Add grid, axis lines, axis labels
-        sc.axes.grid(True, linestyle="--", alpha=0.7)
-        sc.axes.axhline(color="black")
-        sc.axes.axvline(color="black")
-        sc.axes.set_xlabel(X_axis_label)
-        sc.axes.set_ylabel(Y_axis_label)
+        self.canvas.axes.grid(True, linestyle="--", alpha=0.7)
+        self.canvas.axes.axhline(color="black")
+        self.canvas.axes.axvline(color="black")
+        self.canvas.axes.set_xlabel(X_axis_label)
+        self.canvas.axes.set_ylabel(Y_axis_label)
 
         # Add minor tick locators
-        sc.axes.xaxis.set_minor_locator(AutoMinorLocator(10))
-        sc.axes.yaxis.set_minor_locator(AutoMinorLocator(10))
+        self.canvas.axes.xaxis.set_minor_locator(AutoMinorLocator(10))
+        self.canvas.axes.yaxis.set_minor_locator(AutoMinorLocator(10))
 
         # Add plot lines
         lines = []
@@ -103,14 +103,14 @@ class SubwindowPlot(QMdiSubWindow):
             X_data = data.LT[X_axis_label]
             Y_data = data.LT[Y_axis_label]
             label = data.naming_data["Name"]
-            line = sc.axes.plot(X_data, Y_data, linewidth=1, label=label)
+            line = self.canvas.axes.plot(X_data, Y_data, linewidth=1, label=label)
             lines.append(line)
 
         # Add legend
-        sc.axes.legend()
+        self.canvas.axes.legend()
 
         # Set tight layout
-        sc.fig.tight_layout()
+        self.canvas.fig.tight_layout()
 
         # Create temporary slot function for manually changing tick locators
         def tmp_locator_changed_slot():
@@ -118,7 +118,7 @@ class SubwindowPlot(QMdiSubWindow):
                 x_multiple_locator_edit.text().strip("\n"),
                 y_multiple_locator_edit.text().strip("\n"),
             )
-            axes = sc.axes.xaxis, sc.axes.yaxis
+            axes = self.canvas.axes.xaxis, self.canvas.axes.yaxis
 
             # Try to set multiple locators
             for string, axis in zip(X_Y_strings, axes):
@@ -129,7 +129,7 @@ class SubwindowPlot(QMdiSubWindow):
                     axis.set_major_locator(AutoLocator())
 
             # Force redraw plot
-            sc.draw()
+            self.canvas.draw()
             return
 
         # Connect tick locator signals and slots
@@ -137,18 +137,10 @@ class SubwindowPlot(QMdiSubWindow):
         y_multiple_locator_edit.editingFinished.connect(tmp_locator_changed_slot)
 
         # Create cursor for plot
-        cursor = mplcursors.cursor(sc.axes)
+        cursor = mplcursors.cursor(self.canvas.axes)
         cursor.connect(
             "add",
-            lambda sel: sel.annotation.set_text(
-                "\n".join(
-                    [
-                        sel.artist.get_label(),
-                        f"{X_axis_label} = {sel.target[0]:.3f}",
-                        f"{Y_axis_label} = {sel.target[1]:.3f}",
-                    ]
-                )
-            ),
+            lambda sel: self.mplcursor_connect_function(sel, X_axis_label, Y_axis_label)
         )
 
         # Add checkboxes for each plot to show/hide plot
@@ -177,8 +169,8 @@ class SubwindowPlot(QMdiSubWindow):
                 line[0].set_label(
                     datas[i].naming_data["Name"] if checkbox.isChecked() else ""
                 )
-                sc.axes.legend()
-            sc.draw()
+                self.canvas.axes.legend()
+            self.canvas.draw()
             return
 
         # Connect visibility slots and signals
@@ -187,4 +179,14 @@ class SubwindowPlot(QMdiSubWindow):
 
         # Show plot window
         self.show()
+        return
+    
+    def mplcursor_connect_function(self, selection, X_axis_label:str, Y_axis_label:str):
+        selection.annotation.set_text(
+            "\n".join([
+                selection.artist.get_label(),
+                f"{X_axis_label} = {selection.target[0]:.3f}",
+                f"{Y_axis_label} = {selection.target[1]:.3f}",
+            ])
+        )
         return
