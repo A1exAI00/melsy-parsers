@@ -1,5 +1,5 @@
 from typing import List, Dict
-from os.path import join, dirname, basename, splitext
+from os.path import join, basename, splitext
 from glob import iglob
 import re
 

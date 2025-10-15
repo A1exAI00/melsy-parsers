@@ -1,33 +1,19 @@
 from typing import List, Dict
-from os.path import join, dirname, basename, splitext
-from glob import iglob
-import re
 
 from PySide6.QtWidgets import (
-    QMainWindow,
-    QTableWidget,
-    QTableWidgetItem,
     QVBoxLayout,
-    QHBoxLayout,
     QWidget,
     QMdiArea,
     QMdiSubWindow,
-    QComboBox,
     QLineEdit,
-    QPushButton,
-    QFileDialog,
     QCheckBox,
     QLabel,
     QGridLayout,
 )
-import matplotlib as mpl
 from matplotlib.backends.backend_qtagg import FigureCanvas
-from matplotlib.backends.backend_qtagg import NavigationToolbar2QT as NavigationToolbar
-from matplotlib.figure import Figure
 from matplotlib.ticker import (
     MultipleLocator,
     AutoMinorLocator,
-    FixedLocator,
     AutoLocator,
 )
 import mplcursors
@@ -96,7 +82,7 @@ class SubwindowPlot(QMdiSubWindow):
 
         # Create canvas backend
         sc = MplCanvas(self, width=5, height=4, dpi=100)
-        toolbar = ModifiedToolbar(sc, None, self)
+        toolbar = ModifiedToolbar(sc, None)
         plot_window_layout.addWidget(toolbar)
         plot_window_layout.addWidget(sc)
 

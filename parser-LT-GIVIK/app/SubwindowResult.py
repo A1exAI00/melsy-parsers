@@ -1,10 +1,6 @@
 from typing import List, Dict
-from os.path import join, dirname, basename, splitext
-from glob import iglob
-import re
 
 from PySide6.QtWidgets import (
-    QMainWindow,
     QTableWidget,
     QTableWidgetItem,
     QVBoxLayout,
@@ -12,13 +8,7 @@ from PySide6.QtWidgets import (
     QWidget,
     QMdiArea,
     QMdiSubWindow,
-    QComboBox,
-    QLineEdit,
     QPushButton,
-    QFileDialog,
-    QCheckBox,
-    QLabel,
-    QGridLayout,
 )
 import clipboard as clip
 
