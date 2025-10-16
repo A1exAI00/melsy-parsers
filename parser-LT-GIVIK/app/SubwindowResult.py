@@ -105,7 +105,7 @@ class SubwindowResult(QMdiSubWindow):
             for i, (name, values) in enumerate(data.LT.items()):
                 curr_line = [
                     name,
-                ] + list(map(str, values))
+                ] + values
                 self.append_to_results_table(curr_line)
 
             # Append empty row spacer
@@ -137,15 +137,20 @@ class SubwindowResult(QMdiSubWindow):
     def append_to_results_table(self, array: List[str]) -> None:
         self.add_row_to_results_table()
         for i, value in enumerate(array):
-            if value is None:
-                value = ""
-            elif "nan" in value.lower():
-                value = "NaN"
-            self.table.item(self.table.rowCount() - 1, i).setText(value)
+            if isinstance(value, str):
+                if value is None:
+                    value = ""
+                elif "nan" in value.lower():
+                    value = "NaN"
+                self.table.item(self.table.rowCount() - 1, i).setText(value)
+            if isinstance(value, float):
+                self.table.item(self.table.rowCount() - 1, i).setText(f"{value:.5f}")
         return
 
     def create_power_plot_window_slot(self, datas: List[Data]) -> None:
-        new_window = SubwindowPlot(self.sub_controller, self.mdi, role="power", datas=datas)
+        new_window = SubwindowPlot(
+            self.sub_controller, self.mdi, role="power", datas=datas
+        )
         self.power_plot_subwindows.append(new_window)
         return
 
