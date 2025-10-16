@@ -66,8 +66,8 @@ class Data:
 
         match self.GIVIK_version:
             case 1:
-                self.additional_data_names = ["Avg. power(time) slope, W/h",]
-                self.additional_data_patterns = [r"$a",]
+                self.additional_data_names = []
+                self.additional_data_patterns = []
                 self.additional_data_values = [None,] \
                     * len(self.additional_data_names)
             case 2:
@@ -75,13 +75,11 @@ class Data:
                     "Pulse width, ms",
                     "Repetition frequency, Hz",
                     "Set operating current, A",
-                    "Avg. power(time) slope, W/h"
                 ]
                 self.additional_data_patterns = [
                     r"Pulse width:\s*([0-9]*\.?[0-9]+)\s*ms",
                     r"Repetition frequency:\s*([0-9]*\.?[0-9]+)\s*Hz",
                     r"Set operating current:\s*([0-9]*\.?[0-9]+)\s*A",
-                    r"$a"
                 ]
                 self.additional_data_values = [None,] \
                     * len(self.additional_data_patterns)
@@ -91,27 +89,11 @@ class Data:
         match self.GIVIK_version:
             case 1:
                 self.parse_LT_GIVIK1()
-                self.parse_power_slope_GIVIK1()
             case 2:
                 self.parse_LT_GIVIK2()
-                self.parse_power_slope_GIVIK2()
             case _:
                 raise Exception(f"Unknown GIVIK version: {self.GIVIK_version}")
 
-        return
-
-    def parse_power_slope_GIVIK1(self) -> None:
-        p1, p2 = self.LT["Power (avg), W"][0], self.LT["Power (avg), W"][-1]
-        t1, t2 = self.LT["Reletive time, h"][0], self.LT["Reletive time, h"][-1]
-        slope = (p2-p1)/(t2-t1)
-        self.additional_data_values[0] = f"{slope:.5E}"
-        return
-
-    def parse_power_slope_GIVIK2(self) -> None:
-        p1, p2 = self.LT["Power (avg), W"][0], self.LT["Power (avg), W"][-1]
-        t1, t2 = self.LT["Reletive time, h"][0], self.LT["Reletive time, h"][-1]
-        slope = (p2-p1)/(t2-t1)
-        self.additional_data_values[3] = f"{slope:.5E}"
         return
 
     def parse_LT_GIVIK1(self) -> None:
