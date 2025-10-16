@@ -14,6 +14,7 @@ import clipboard as clip
 
 from backend.Data import Data
 from app.MainController import MainController
+from app.SubController import SubController
 from app.SubwindowPlot import SubwindowPlot
 
 
@@ -22,6 +23,7 @@ class SubwindowResult(QMdiSubWindow):
         self, controller: "MainController", mdi: QMdiArea, index: int, _dict: Dict
     ):
         self.controller = controller
+        self.sub_controller = SubController()
         self.mdi = mdi
         self.index = index
         self.datas = _dict["datas"]
@@ -141,20 +143,20 @@ class SubwindowResult(QMdiSubWindow):
         return
 
     def create_power_plot_window_slot(self, datas: List[Data]) -> None:
-        new_window = SubwindowPlot(self.controller, self.mdi, role="power", datas=datas)
+        new_window = SubwindowPlot(self.sub_controller, self.mdi, role="power", datas=datas)
         self.power_plot_subwindows.append(new_window)
         return
 
     def create_voltage_plot_window_slot(self, datas: List[Data]) -> None:
         new_window = SubwindowPlot(
-            self.controller, self.mdi, role="voltage", datas=datas
+            self.sub_controller, self.mdi, role="voltage", datas=datas
         )
         self.voltage_plot_subwindows.append(new_window)
         return
 
     def create_temperature_plot_window_slot(self, datas: List[Data]) -> None:
         new_window = SubwindowPlot(
-            self.controller, self.mdi, role="temperature", datas=datas
+            self.sub_controller, self.mdi, role="temperature", datas=datas
         )
         self.temperature_plot_subwindows.append(new_window)
         return

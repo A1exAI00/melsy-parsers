@@ -10,7 +10,6 @@ from PySide6.QtWidgets import (
     QLabel,
     QGridLayout,
 )
-from matplotlib.backends.backend_qtagg import FigureCanvas
 from matplotlib.ticker import (
     MultipleLocator,
     AutoMinorLocator,
@@ -20,18 +19,27 @@ import mplcursors
 
 from backend.Data import Data
 from app.MainController import MainController
-from app.MplCanvas import MplCanvas
 from app.ModifiedToolbar import ModifiedToolbar
+from app.MplWidget import MplWidget
+from app.LinearApproxLine import LinearApproxLine
 
 
 class SubwindowPlot(QMdiSubWindow):
-    def __init__(self, controller: "MainController", mdi: QMdiArea, role: str, datas: List[Data]) -> None:
+    def __init__(
+        self, controller: "MainController", mdi: QMdiArea, role: str, datas: List[Data]
+    ) -> None:
         self.controller = controller
         self.mdi = mdi
         self.role = role
         self.datas = datas
         super().__init__()
         self.setup_ui()
+        return
+
+    def connect_controller(self) -> None:
+        self.controller.draggable_line_position_changed.connect(
+            self.draggable_line_position_changed_slot
+        )
         return
 
     def setup_ui(self) -> None:
@@ -81,21 +89,21 @@ class SubwindowPlot(QMdiSubWindow):
         plot_window_layout.addLayout(grid_layout_edits)
 
         # Create canvas backend
-        self.canvas = MplCanvas(self, width=5, height=4, dpi=100)
-        toolbar = ModifiedToolbar(self.canvas, None)
+        self.mplwidget = MplWidget(self.controller)
+        toolbar = ModifiedToolbar(self.mplwidget.canvas, None)
         plot_window_layout.addWidget(toolbar)
-        plot_window_layout.addWidget(self.canvas)
+        plot_window_layout.addWidget(self.mplwidget)
 
         # Add grid, axis lines, axis labels
-        self.canvas.axes.grid(True, linestyle="--", alpha=0.7)
-        self.canvas.axes.axhline(color="black")
-        self.canvas.axes.axvline(color="black")
-        self.canvas.axes.set_xlabel(X_axis_label)
-        self.canvas.axes.set_ylabel(Y_axis_label)
+        self.mplwidget.axes.grid(True, linestyle="--", alpha=0.7)
+        self.mplwidget.axes.axhline(color="black")
+        self.mplwidget.axes.axvline(color="black")
+        self.mplwidget.axes.set_xlabel(X_axis_label)
+        self.mplwidget.axes.set_ylabel(Y_axis_label)
 
         # Add minor tick locators
-        self.canvas.axes.xaxis.set_minor_locator(AutoMinorLocator(10))
-        self.canvas.axes.yaxis.set_minor_locator(AutoMinorLocator(10))
+        self.mplwidget.axes.xaxis.set_minor_locator(AutoMinorLocator(10))
+        self.mplwidget.axes.yaxis.set_minor_locator(AutoMinorLocator(10))
 
         # Add plot lines
         lines = []
@@ -103,14 +111,14 @@ class SubwindowPlot(QMdiSubWindow):
             X_data = data.LT[X_axis_label]
             Y_data = data.LT[Y_axis_label]
             label = data.naming_data["Name"]
-            line = self.canvas.axes.plot(X_data, Y_data, linewidth=1, label=label)
+            line = self.mplwidget.plot(X_data, Y_data, label=label, linewidth=1)
             lines.append(line)
 
         # Add legend
-        self.canvas.axes.legend()
+        self.mplwidget.axes.legend()
 
         # Set tight layout
-        self.canvas.fig.tight_layout()
+        self.mplwidget.fig.tight_layout()
 
         # Create temporary slot function for manually changing tick locators
         def tmp_locator_changed_slot():
@@ -118,7 +126,7 @@ class SubwindowPlot(QMdiSubWindow):
                 x_multiple_locator_edit.text().strip("\n"),
                 y_multiple_locator_edit.text().strip("\n"),
             )
-            axes = self.canvas.axes.xaxis, self.canvas.axes.yaxis
+            axes = self.mplwidget.axes.xaxis, self.mplwidget.axes.yaxis
 
             # Try to set multiple locators
             for string, axis in zip(X_Y_strings, axes):
@@ -129,7 +137,7 @@ class SubwindowPlot(QMdiSubWindow):
                     axis.set_major_locator(AutoLocator())
 
             # Force redraw plot
-            self.canvas.draw()
+            self.mplwidget.canvas.draw()
             return
 
         # Connect tick locator signals and slots
@@ -137,10 +145,12 @@ class SubwindowPlot(QMdiSubWindow):
         y_multiple_locator_edit.editingFinished.connect(tmp_locator_changed_slot)
 
         # Create cursor for plot
-        cursor = mplcursors.cursor(self.canvas.axes)
+        cursor = mplcursors.cursor(self.mplwidget.axes)
         cursor.connect(
             "add",
-            lambda sel: self.mplcursor_connect_function(sel, X_axis_label, Y_axis_label)
+            lambda sel: self.mplcursor_connect_function(
+                sel, X_axis_label, Y_axis_label
+            ),
         )
 
         # Add checkboxes for each plot to show/hide plot
@@ -161,7 +171,7 @@ class SubwindowPlot(QMdiSubWindow):
             if col >= columns:
                 col = 0
                 row += 1
-        
+
         # Add slot function to update plot visibility
         def tmp_slot():
             for i, (checkbox, line) in enumerate(zip(checkboxes, lines)):
@@ -169,24 +179,34 @@ class SubwindowPlot(QMdiSubWindow):
                 line[0].set_label(
                     datas[i].naming_data["Name"] if checkbox.isChecked() else ""
                 )
-                self.canvas.axes.legend()
-            self.canvas.draw()
+                self.mplwidget.axes.legend()
+            self.mplwidget.canvas.draw()
             return
 
         # Connect visibility slots and signals
         for i, data in enumerate(datas):
             checkboxes[i].stateChanged.connect(tmp_slot)
 
+        # Add draggable lines and linea approximation
+        self.mplwidget.add_draggable_line(100, "blue", 1)
+        self.mplwidget.add_draggable_line(200, "blue", 1)
+
+        # self.approx_line = LinearApproxLine(self.mplwidget.axes)
+
         # Show plot window
         self.show()
         return
-    
-    def mplcursor_connect_function(self, selection, X_axis_label:str, Y_axis_label:str):
+
+    def mplcursor_connect_function(
+        self, selection, X_axis_label: str, Y_axis_label: str
+    ):
         selection.annotation.set_text(
-            "\n".join([
-                selection.artist.get_label(),
-                f"{X_axis_label} = {selection.target[0]:.3f}",
-                f"{Y_axis_label} = {selection.target[1]:.3f}",
-            ])
+            "\n".join(
+                [
+                    selection.artist.get_label(),
+                    f"{X_axis_label} = {selection.target[0]:.3f}",
+                    f"{Y_axis_label} = {selection.target[1]:.3f}",
+                ]
+            )
         )
         return
