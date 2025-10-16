@@ -78,6 +78,9 @@ class SubwindowSetup(QMdiSubWindow):
         self.table = QTableWidget()
         self.table.setRowCount(1)
         self.table.setColumnCount(3)
+        self.table.setVerticalScrollMode(QTableWidget.ScrollPerPixel)
+        self.table.setHorizontalScrollMode(QTableWidget.ScrollPerPixel)
+
         self.table.setHorizontalHeaderLabels(["Path", "", "Naming"])
 
         naming_overwrite_widget = QWidget()

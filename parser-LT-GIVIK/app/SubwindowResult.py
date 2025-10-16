@@ -87,6 +87,8 @@ class SubwindowResult(QMdiSubWindow):
         self.table = QTableWidget()
         self.table.setColumnCount(max_cols)
         self.table.setRowCount(0)
+        self.table.setVerticalScrollMode(QTableWidget.ScrollPerPixel)
+        self.table.setHorizontalScrollMode(QTableWidget.ScrollPerPixel)
         table_window_layout.addWidget(self.table)
 
         # Edit table
