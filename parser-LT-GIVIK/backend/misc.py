@@ -7,8 +7,9 @@ from sklearn.metrics import r2_score
 
 def create_linear_approximation(xs, ys):
     model = LinearRegression()
-    model.fit(X=np.array(xs).reshape(-1, 1), y=ys)
-    y_pred = model.predict(X=np.array(xs).reshape(-1, 1))
+    X = np.array(xs).reshape(-1, 1)
+    model.fit(X=X, y=ys)
+    y_pred = model.predict(X=X)
     r2 = r2_score(ys, y_pred)
     slope = model.coef_[0]
     intercept = model.intercept_
