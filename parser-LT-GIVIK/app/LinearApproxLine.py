@@ -3,7 +3,7 @@ from typing import Tuple, List
 from matplotlib.axes import Axes
 
 from backend.misc import find_best_linear_subset
-from app.MainController import MainController
+from app.PlotController import PlotController
 
 
 class LinearApproxLine:
@@ -43,7 +43,7 @@ class LinearApproxLine:
 
         return
 
-    def connect_controller(self, controller: "MainController") -> None:
+    def connect_controller(self, controller: "PlotController") -> None:
         self.controller = controller
         return
 

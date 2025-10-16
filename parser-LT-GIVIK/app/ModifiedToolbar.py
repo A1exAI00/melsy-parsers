@@ -1,10 +1,9 @@
 from matplotlib.backends.backend_qtagg import NavigationToolbar2QT as NavigationToolbar
-
-from app.MplCanvas import MplCanvas
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 
 
 class ModifiedToolbar(NavigationToolbar):
-    def __init__(self, canvas: MplCanvas, parent):
+    def __init__(self, canvas: FigureCanvas, parent):
         self.canvas = canvas
         super().__init__(self.canvas, parent)
         return

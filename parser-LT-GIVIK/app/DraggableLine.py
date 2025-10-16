@@ -1,11 +1,14 @@
 from matplotlib.axes import Axes
 
-from app.MainController import MainController
+from app.PlotController import PlotController
 
 
 class DraggableVerticalLine:
-    def __init__(self, ax: Axes, x: float, color: str = "red", linewidth=2) -> None:
+    def __init__(
+        self, ax: Axes, index: int, x: float, color: str = "red", linewidth=2
+    ) -> None:
         self.ax = ax
+        self.index = index
         self.x = x
         self.color = color
         self.linewidth = linewidth
@@ -33,16 +36,12 @@ class DraggableVerticalLine:
         )
 
         # Connect event handlers
-        self.cid_press = self.canvas.mpl_connect("button_press_event", self.on_press)
-        self.cid_release = self.canvas.mpl_connect(
-            "button_release_event", self.on_release
-        )
-        self.cid_motion = self.canvas.mpl_connect("motion_notify_event", self.on_motion)
+        self.mpl_connect()
 
         self.pressed = False
         return
 
-    def connect_controller(self, controller: "MainController") -> None:
+    def connect_controller(self, controller: "PlotController") -> None:
         self.controller = controller
         return
 
@@ -67,7 +66,7 @@ class DraggableVerticalLine:
         self.set_position(new_x)
 
         # Emit signal
-        self.controller.draggable_line_position_changed.emit()
+        self.controller.draggable_changed_position.emit(self.index)
         return
 
     def on_release(self, event):
@@ -88,9 +87,33 @@ class DraggableVerticalLine:
         self.canvas.draw()
         return
 
-    def disconnect(self):
+    def mpl_connect(self) -> None:
+        self.cid_press = self.canvas.mpl_connect("button_press_event", self.on_press)
+        self.cid_release = self.canvas.mpl_connect(
+            "button_release_event", self.on_release
+        )
+        self.cid_motion = self.canvas.mpl_connect("motion_notify_event", self.on_motion)
+        return
+
+    def mpl_disconnect(self):
         """Disconnect all the stored connection ids"""
         self.canvas.mpl_disconnect(self.cid_press)
         self.canvas.mpl_disconnect(self.cid_release)
         self.canvas.mpl_disconnect(self.cid_motion)
+        return
+
+    def set_linestyle(self, ls:str) -> None:
+        self.line.set_linestyle(ls)
+        return
+    
+    def show(self):
+        self.mpl_connect()
+        self.line.set_linestyle("solid")
+        self.text.set_visible(True)
+        return
+    
+    def hide(self):
+        self.mpl_disconnect()
+        self.line.set_linestyle("None")
+        self.text.set_visible(False)
         return

@@ -1,4 +1,5 @@
 from typing import List, Dict
+import re
 
 from PySide6.QtWidgets import (
     QVBoxLayout,
@@ -18,7 +19,8 @@ from matplotlib.ticker import (
 import mplcursors
 
 from backend.Data import Data
-from app.MainController import MainController
+from app.SubController import SubController
+from app.PlotController import PlotController
 from app.ModifiedToolbar import ModifiedToolbar
 from app.MplWidget import MplWidget
 from app.LinearApproxLine import LinearApproxLine
@@ -26,20 +28,23 @@ from app.LinearApproxLine import LinearApproxLine
 
 class SubwindowPlot(QMdiSubWindow):
     def __init__(
-        self, controller: "MainController", mdi: QMdiArea, role: str, datas: List[Data]
+        self, controller: "SubController", mdi: QMdiArea, role: str, datas: List[Data]
     ) -> None:
         self.controller = controller
+        self.plot_controller = PlotController()
         self.mdi = mdi
         self.role = role
         self.datas = datas
         super().__init__()
         self.setup_ui()
+        self.connect_controller()
         return
 
     def connect_controller(self) -> None:
-        self.controller.draggable_line_position_changed.connect(
-            self.draggable_line_position_changed_slot
+        self.plot_controller.draggable_changed_position.connect(
+            self.draggable_changed_position_slot
         )
+        self.plot_controller.touch_plot.connect(self.touch_plot_slot)
         return
 
     def setup_ui(self) -> None:
@@ -89,7 +94,7 @@ class SubwindowPlot(QMdiSubWindow):
         plot_window_layout.addLayout(grid_layout_edits)
 
         # Create canvas backend
-        self.mplwidget = MplWidget(self.controller)
+        self.mplwidget = MplWidget(self.plot_controller)
         toolbar = ModifiedToolbar(self.mplwidget.canvas, None)
         plot_window_layout.addWidget(toolbar)
         plot_window_layout.addWidget(self.mplwidget)
@@ -106,13 +111,11 @@ class SubwindowPlot(QMdiSubWindow):
         self.mplwidget.axes.yaxis.set_minor_locator(AutoMinorLocator(10))
 
         # Add plot lines
-        lines = []
         for data in datas:
             X_data = data.LT[X_axis_label]
             Y_data = data.LT[Y_axis_label]
             label = data.naming_data["Name"]
-            line = self.mplwidget.plot(X_data, Y_data, label=label, linewidth=1)
-            lines.append(line)
+            self.mplwidget.plot(X_data, Y_data, label=label, linewidth=1)
 
         # Add legend
         self.mplwidget.axes.legend()
@@ -145,7 +148,7 @@ class SubwindowPlot(QMdiSubWindow):
         y_multiple_locator_edit.editingFinished.connect(tmp_locator_changed_slot)
 
         # Create cursor for plot
-        cursor = mplcursors.cursor(self.mplwidget.axes)
+        cursor = mplcursors.cursor(self.mplwidget.axes.lines)
         cursor.connect(
             "add",
             lambda sel: self.mplcursor_connect_function(
@@ -158,55 +161,52 @@ class SubwindowPlot(QMdiSubWindow):
         plot_window_layout.addLayout(grid_layout)
 
         # Generate checkboxes in a grid
-        checkboxes = []
-        columns, row, col = 3, 0, 0
+        checkboxes_show = []
+        checkboxes_approx = []
         for i, data in enumerate(datas):
-            checkbox = QCheckBox(data.naming_data["Name"])
-            checkbox.setChecked(True)
-            grid_layout.addWidget(checkbox, row, col)
-            checkboxes.append(checkbox)
+            checkbox_show = QCheckBox(data.naming_data["Name"])
+            checkbox_show.setChecked(True)
+            grid_layout.addWidget(checkbox_show, i, 0)
+            checkboxes_show.append(checkbox_show)
 
-            # Iterate over columns
-            col += 1
-            if col >= columns:
-                col = 0
-                row += 1
-
-        # Add slot function to update plot visibility
-        def tmp_slot():
-            for i, (checkbox, line) in enumerate(zip(checkboxes, lines)):
-                line[0].set_linestyle("solid" if checkbox.isChecked() else "None")
-                line[0].set_label(
-                    datas[i].naming_data["Name"] if checkbox.isChecked() else ""
-                )
-                self.mplwidget.axes.legend()
-            self.mplwidget.canvas.draw()
-            return
+            checkbox_approx = QCheckBox("Approx.")
+            # checkbox_approx.setChecked(False)
+            grid_layout.addWidget(checkbox_approx, i, 1)
+            checkboxes_approx.append(checkbox_approx)
 
         # Connect visibility slots and signals
         for i, data in enumerate(datas):
-            checkboxes[i].stateChanged.connect(tmp_slot)
+            checkboxes_show[i].stateChanged.connect(
+                lambda _, i=i: self.plot_controller.plot_visibility_toggled.emit(i)
+            )
+            checkboxes_approx[i].stateChanged.connect(
+                lambda _, i=i: self.plot_controller.draggable_visibility_toggled.emit(i)
+            )
 
-        # Add draggable lines and linea approximation
-        self.mplwidget.add_draggable_line(100, "blue", 1)
-        self.mplwidget.add_draggable_line(200, "blue", 1)
-
-        # self.approx_line = LinearApproxLine(self.mplwidget.axes)
-
-        # Show plot window
         self.show()
         return
 
     def mplcursor_connect_function(
         self, selection, X_axis_label: str, Y_axis_label: str
-    ):
-        selection.annotation.set_text(
-            "\n".join(
-                [
-                    selection.artist.get_label(),
-                    f"{X_axis_label} = {selection.target[0]:.3f}",
-                    f"{Y_axis_label} = {selection.target[1]:.3f}",
-                ]
+    ):  
+        if re.findall(r"_child\d+", selection.artist.get_label()):
+            selection.annotation.set_visible(False)
+        else:
+            selection.annotation.set_text(
+                "\n".join(
+                    [
+                        selection.artist.get_label(),
+                        f"{X_axis_label} = {selection.target[0]:.3f}",
+                        f"{Y_axis_label} = {selection.target[1]:.3f}",
+                    ]
+                )
             )
-        )
+        return
+
+    def draggable_changed_position_slot(self, index: int) -> None:
+        return
+
+    def touch_plot_slot(self) -> None:
+        self.mplwidget.axes.legend()
+        self.mplwidget.canvas.draw()
         return
