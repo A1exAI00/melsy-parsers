@@ -1,5 +1,4 @@
 from typing import List, Dict
-import re
 
 from PySide6.QtWidgets import (
     QVBoxLayout,
@@ -16,7 +15,6 @@ from matplotlib.ticker import (
     AutoMinorLocator,
     AutoLocator,
 )
-import mplcursors
 
 from backend.Data import Data
 from app.SubController import SubController
@@ -41,10 +39,6 @@ class SubwindowPlot(QMdiSubWindow):
         return
 
     def connect_controller(self) -> None:
-        self.plot_controller.draggable_changed_position.connect(
-            self.draggable_changed_position_slot
-        )
-        self.plot_controller.touch_plot.connect(self.touch_plot_slot)
         return
 
     def setup_ui(self) -> None:
@@ -94,21 +88,12 @@ class SubwindowPlot(QMdiSubWindow):
         plot_window_layout.addLayout(grid_layout_edits)
 
         # Create canvas backend
-        self.mplwidget = MplWidget(self.plot_controller)
-        toolbar = ModifiedToolbar(self.mplwidget.canvas, None)
+        self.mplwidget = MplWidget(
+            self.plot_controller, xlabel=X_axis_label, ylabel=Y_axis_label, role=self.role,
+        )
+        toolbar = ModifiedToolbar(self.mplwidget.canvas, self.mplwidget.fig, None)
         plot_window_layout.addWidget(toolbar)
         plot_window_layout.addWidget(self.mplwidget)
-
-        # Add grid, axis lines, axis labels
-        self.mplwidget.axes.grid(True, linestyle="--", alpha=0.7)
-        self.mplwidget.axes.axhline(color="black")
-        self.mplwidget.axes.axvline(color="black")
-        self.mplwidget.axes.set_xlabel(X_axis_label)
-        self.mplwidget.axes.set_ylabel(Y_axis_label)
-
-        # Add minor tick locators
-        self.mplwidget.axes.xaxis.set_minor_locator(AutoMinorLocator(10))
-        self.mplwidget.axes.yaxis.set_minor_locator(AutoMinorLocator(10))
 
         # Add plot lines
         for data in datas:
@@ -117,44 +102,15 @@ class SubwindowPlot(QMdiSubWindow):
             label = data.naming_data["Name"]
             self.mplwidget.plot(X_data, Y_data, label=label, linewidth=1)
 
-        # Add legend
-        self.mplwidget.axes.legend()
-
-        # Set tight layout
-        self.mplwidget.fig.tight_layout()
-
-        # Create temporary slot function for manually changing tick locators
-        def tmp_locator_changed_slot():
-            X_Y_strings = (
-                x_multiple_locator_edit.text().strip("\n"),
-                y_multiple_locator_edit.text().strip("\n"),
-            )
-            axes = self.mplwidget.axes.xaxis, self.mplwidget.axes.yaxis
-
-            # Try to set multiple locators
-            for string, axis in zip(X_Y_strings, axes):
-                try:
-                    integer = int(string)
-                    axis.set_major_locator(MultipleLocator(integer))
-                except:
-                    axis.set_major_locator(AutoLocator())
-
-            # Force redraw plot
-            self.mplwidget.canvas.draw()
-            return
+        self.plot_controller.touch_legend.emit()
 
         # Connect tick locator signals and slots
-        x_multiple_locator_edit.editingFinished.connect(tmp_locator_changed_slot)
-        y_multiple_locator_edit.editingFinished.connect(tmp_locator_changed_slot)
-
-        # Create cursor for plot
-        cursor = mplcursors.cursor(self.mplwidget.axes.lines)
-        cursor.connect(
-            "add",
-            lambda sel: self.mplcursor_connect_function(
-                sel, X_axis_label, Y_axis_label
-            ),
-        )
+        tmp_slot = lambda edits=(
+            x_multiple_locator_edit,
+            y_multiple_locator_edit,
+        ): self.plot_controller.update_ticks.emit(edits)
+        x_multiple_locator_edit.editingFinished.connect(tmp_slot)
+        y_multiple_locator_edit.editingFinished.connect(tmp_slot)
 
         # Add checkboxes for each plot to show/hide plot
         grid_layout = QGridLayout()
@@ -184,29 +140,4 @@ class SubwindowPlot(QMdiSubWindow):
             )
 
         self.show()
-        return
-
-    def mplcursor_connect_function(
-        self, selection, X_axis_label: str, Y_axis_label: str
-    ):  
-        if re.findall(r"_child\d+", selection.artist.get_label()):
-            selection.annotation.set_visible(False)
-        else:
-            selection.annotation.set_text(
-                "\n".join(
-                    [
-                        selection.artist.get_label(),
-                        f"{X_axis_label} = {selection.target[0]:.3f}",
-                        f"{Y_axis_label} = {selection.target[1]:.3f}",
-                    ]
-                )
-            )
-        return
-
-    def draggable_changed_position_slot(self, index: int) -> None:
-        return
-
-    def touch_plot_slot(self) -> None:
-        self.mplwidget.axes.legend()
-        self.mplwidget.canvas.draw()
         return

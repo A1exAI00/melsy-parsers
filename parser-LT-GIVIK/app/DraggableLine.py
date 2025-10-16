@@ -14,6 +14,11 @@ class DraggableVerticalLine:
         self.linewidth = linewidth
         self.canvas = ax.figure.canvas
 
+        self.default_linestyle = "-."
+
+        # xlim = self.ax.get_xlim()
+        ylim = self.ax.get_ylim()
+
         # Create the vertical line
         self.line = ax.axvline(
             x=self.x,
@@ -21,13 +26,13 @@ class DraggableVerticalLine:
             linewidth=self.linewidth,
             picker=True,
             pickradius=10,
+            linestyle=self.default_linestyle
         )
 
         # Add text annotation
-        ylim = self.ax.get_ylim()
         self.text = ax.text(
             x,
-            0.1 * (ylim[1] - ylim[0]),
+            0.05 * (ylim[1] - ylim[0]),
             f"x={x:.2f}",
             ha="center",
             va="bottom",
@@ -81,7 +86,7 @@ class DraggableVerticalLine:
 
         # Update text position
         ylim = self.ax.get_ylim()
-        self.text.set_position((x, 0.1 * (ylim[1] - ylim[0])))
+        self.text.set_position((x, 0.05 * (ylim[1] - ylim[0])))
         self.text.set_text(f"x={x:.2f}")
 
         self.canvas.draw()
@@ -108,7 +113,7 @@ class DraggableVerticalLine:
     
     def show(self):
         self.mpl_connect()
-        self.line.set_linestyle("solid")
+        self.line.set_linestyle(self.default_linestyle)
         self.text.set_visible(True)
         return
     

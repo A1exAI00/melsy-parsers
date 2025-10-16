@@ -1,4 +1,5 @@
 from typing import Tuple, List
+from time import time
 
 from matplotlib.axes import Axes
 
@@ -28,19 +29,7 @@ class LinearApproxLine:
             slope=self.slope,
             color=self.color,
             linewidth=self.linewidth,
-            # # Add text annotation  # TODO
-            # ylim = self.ax.get_ylim()
-            # self.text = ax.text(
-            #     x,
-            #     ylim[1],
-            #     f"x={x:.2f}",
-            #     ha="center",
-            #     va="bottom",
-            #     color=color,
-            #     bbox=dict(boxstyle="round,pad=0.3", facecolor="white", alpha=0.8),
-            # )
         )
-
         return
 
     def connect_controller(self, controller: "PlotController") -> None:
@@ -51,23 +40,20 @@ class LinearApproxLine:
         """Set the line position and update display"""
         self.intercept_point = intercept_point
         self.slope = slope
-        self.line.set_xy1(self.intercept_point) # TODO
-        self.line.set_slope(self.slope) # TODO
-
-        # # Update text position # TODO
-        # ylim = self.ax.get_ylim()
-        # self.text.set_position((x, ylim[1] - 0.1 * (ylim[1] - ylim[0])))
-        # self.text.set_text(f"x={x:.2f}")
-
-        self.canvas.draw()
+        self.line.set_xy1(self.intercept_point)
+        self.line.set_slope(self.slope)
         return
 
     def hide(self) -> None:
         self.line.set_linestyle("None")
-        # self.text.set_visible(False)
+        self.line.set_label("")
         return
-    
+
     def show(self) -> None:
-        self.line.set_linestyle("solid")
-        # self.text.set_visible(True)
+        self.line.set_linestyle("--")
+        # self.line.set_label("")
+        return
+
+    def set_label(self, label: str) -> None:
+        self.line.set_label(label)
         return
