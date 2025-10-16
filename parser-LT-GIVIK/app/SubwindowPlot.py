@@ -9,11 +9,7 @@ from PySide6.QtWidgets import (
     QCheckBox,
     QLabel,
     QGridLayout,
-)
-from matplotlib.ticker import (
-    MultipleLocator,
-    AutoMinorLocator,
-    AutoLocator,
+    QTableWidget,
 )
 
 from backend.Data import Data
@@ -50,21 +46,21 @@ class SubwindowPlot(QMdiSubWindow):
                 Y_axis_label = "Power (avg), W"
                 datas = self.datas
                 sub_x_position, sub_y_position = 1003, 3
-                sub_w, sub_h = 500, 600
+                sub_w, sub_h = 500, 700
             case "voltage":
                 this_title = "LT voltage(time) plot window"
                 X_axis_label = "Reletive time, h"
                 Y_axis_label = "Voltage, V"
                 datas = list(filter(lambda each: each.GIVIK_version == 2, self.datas))
-                sub_x_position, sub_y_position = 1003, 3
-                sub_w, sub_h = 500, 600
+                sub_x_position, sub_y_position = 1103, 3
+                sub_w, sub_h = 500, 700
             case "temperature":
                 this_title = "LT temperature(time) plot window"
                 X_axis_label = "Reletive time, h"
                 Y_axis_label = "Tank water temp., C"
                 datas = list(filter(lambda each: each.GIVIK_version == 2, self.datas))
-                sub_x_position, sub_y_position = 1003, 3
-                sub_w, sub_h = 500, 600
+                sub_x_position, sub_y_position = 1203, 3
+                sub_w, sub_h = 500, 700
 
         # Add new subwindow to Mdi Area
         self.setWindowTitle(this_title)
@@ -89,7 +85,10 @@ class SubwindowPlot(QMdiSubWindow):
 
         # Create canvas backend
         self.mplwidget = MplWidget(
-            self.plot_controller, xlabel=X_axis_label, ylabel=Y_axis_label, role=self.role,
+            self.plot_controller,
+            xlabel=X_axis_label,
+            ylabel=Y_axis_label,
+            role=self.role,
         )
         toolbar = ModifiedToolbar(self.mplwidget.canvas, self.mplwidget.fig, None)
         plot_window_layout.addWidget(toolbar)
@@ -112,22 +111,43 @@ class SubwindowPlot(QMdiSubWindow):
         x_multiple_locator_edit.editingFinished.connect(tmp_slot)
         y_multiple_locator_edit.editingFinished.connect(tmp_slot)
 
-        # Add checkboxes for each plot to show/hide plot
-        grid_layout = QGridLayout()
-        plot_window_layout.addLayout(grid_layout)
+        table = QTableWidget()
+        table.setColumnCount(3)
+        table.setRowCount(len(datas))
+        table.setHorizontalHeaderLabels(["Naming", "Show", "Approx."])
+        table.setColumnWidth(0, 250)
+        table.resizeColumnToContents(1)
+        table.resizeColumnToContents(2)
+        # table.setMinimumHeight(150)
+        # table.setMaximumHeight(200)
+        table.setFixedHeight(150)
+        table.setVerticalScrollMode(QTableWidget.ScrollPerPixel)
+        table.setHorizontalScrollMode(QTableWidget.ScrollPerPixel)
+
+        plot_window_layout.addWidget(table)
 
         # Generate checkboxes in a grid
         checkboxes_show = []
         checkboxes_approx = []
-        for i, data in enumerate(datas):
-            checkbox_show = QCheckBox(data.naming_data["Name"])
+        checkbox_style = """
+                QCheckBox::indicator {
+                    width: 25px;
+                    height: 25px;
+                }
+            """
+        for data_i, data in enumerate(datas):
+            table.setCellWidget(data_i, 0, QLabel(data.naming_data["Name"]))
+
+            checkbox_show = QCheckBox()
             checkbox_show.setChecked(True)
-            grid_layout.addWidget(checkbox_show, i, 0)
+            checkbox_show.setStyleSheet(checkbox_style)
+            table.setCellWidget(data_i, 1, checkbox_show)
             checkboxes_show.append(checkbox_show)
 
-            checkbox_approx = QCheckBox("Approx.")
+            checkbox_approx = QCheckBox()
             # checkbox_approx.setChecked(False)
-            grid_layout.addWidget(checkbox_approx, i, 1)
+            checkbox_approx.setStyleSheet(checkbox_style)
+            table.setCellWidget(data_i, 2, checkbox_approx)
             checkboxes_approx.append(checkbox_approx)
 
         # Connect visibility slots and signals
