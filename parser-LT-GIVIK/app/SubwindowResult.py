@@ -84,10 +84,10 @@ class SubwindowResult(QMdiSubWindow):
         max_cols = max(N_cols)
 
         # Create results table
-        self.result_table = QTableWidget()
-        self.result_table.setColumnCount(max_cols)
-        self.result_table.setRowCount(0)
-        table_window_layout.addWidget(self.result_table)
+        self.table = QTableWidget()
+        self.table.setColumnCount(max_cols)
+        self.table.setRowCount(0)
+        table_window_layout.addWidget(self.table)
 
         # Edit table
         for data_i, data in enumerate(datas):
@@ -110,23 +110,23 @@ class SubwindowResult(QMdiSubWindow):
             if data_i != len(datas) - 1:
                 self.add_row_to_results_table()
 
-        self.result_table.resizeColumnsToContents()
+        self.table.resizeColumnsToContents()
         self.show()
         return
 
     def add_row_to_results_table(self) -> None:
-        new_row_index = self.result_table.rowCount()
-        self.result_table.setRowCount(self.result_table.rowCount() + 1)
-        for i in range(self.result_table.columnCount()):
-            self.result_table.setItem(new_row_index, i, QTableWidgetItem())
+        new_row_index = self.table.rowCount()
+        self.table.setRowCount(self.table.rowCount() + 1)
+        for i in range(self.table.columnCount()):
+            self.table.setItem(new_row_index, i, QTableWidgetItem())
         return
 
     def quick_clipboard_slot(self) -> None:
         tmp = []
-        for i in range(self.result_table.rowCount()):
+        for i in range(self.table.rowCount()):
             subtmp = []
-            for j in range(self.result_table.columnCount()):
-                value = self.result_table.item(i, j).text()
+            for j in range(self.table.columnCount()):
+                value = self.table.item(i, j).text()
                 subtmp.append(value)
             tmp.append("\t".join(subtmp))
         clip.copy("\n".join(tmp))
@@ -139,7 +139,7 @@ class SubwindowResult(QMdiSubWindow):
                 value = ""
             elif "nan" in value.lower():
                 value = "NaN"
-            self.result_table.item(self.result_table.rowCount() - 1, i).setText(value)
+            self.table.item(self.table.rowCount() - 1, i).setText(value)
         return
 
     def create_power_plot_window_slot(self, datas: List[Data]) -> None:
