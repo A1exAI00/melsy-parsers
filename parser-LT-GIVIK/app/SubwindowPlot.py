@@ -46,21 +46,21 @@ class SubwindowPlot(QMdiSubWindow):
                 Y_axis_label = "Power (avg), W"
                 datas = self.datas
                 sub_x_position, sub_y_position = 1003, 3
-                sub_w, sub_h = 500, 700
+                sub_w, sub_h = 500, 800
             case "voltage":
                 this_title = "LT voltage(time) plot window"
                 X_axis_label = "Reletive time, h"
                 Y_axis_label = "Voltage, V"
                 datas = list(filter(lambda each: each.GIVIK_version == 2, self.datas))
                 sub_x_position, sub_y_position = 1103, 3
-                sub_w, sub_h = 500, 700
+                sub_w, sub_h = 500, 800
             case "temperature":
                 this_title = "LT temperature(time) plot window"
                 X_axis_label = "Reletive time, h"
                 Y_axis_label = "Tank water temp., C"
                 datas = list(filter(lambda each: each.GIVIK_version == 2, self.datas))
                 sub_x_position, sub_y_position = 1203, 3
-                sub_w, sub_h = 500, 700
+                sub_w, sub_h = 500, 800
 
         # Add new subwindow to Mdi Area
         self.setWindowTitle(this_title)
@@ -90,6 +90,8 @@ class SubwindowPlot(QMdiSubWindow):
             ylabel=Y_axis_label,
             role=self.role,
         )
+        self.mplwidget.setMinimumHeight(500)
+        self.mplwidget.setMinimumWidth(500)
         toolbar = ModifiedToolbar(self.mplwidget.canvas, self.mplwidget.fig, None)
         plot_window_layout.addWidget(toolbar)
         plot_window_layout.addWidget(self.mplwidget)
@@ -118,9 +120,9 @@ class SubwindowPlot(QMdiSubWindow):
         table.setColumnWidth(0, 250)
         table.resizeColumnToContents(1)
         table.resizeColumnToContents(2)
-        # table.setMinimumHeight(150)
-        # table.setMaximumHeight(200)
-        table.setFixedHeight(150)
+        table.setMinimumHeight(50)
+        table.setMaximumHeight(150)
+        # table.setFixedHeight(150)
         table.setVerticalScrollMode(QTableWidget.ScrollPerPixel)
         table.setHorizontalScrollMode(QTableWidget.ScrollPerPixel)
 
