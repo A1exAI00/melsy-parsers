@@ -51,7 +51,8 @@ class LinearApproxLine:
         """Set the line position and update display"""
         self.intercept_point = intercept_point
         self.slope = slope
-        # self.line.set_xdata([x, x]) # TODO
+        self.line.set_xy1(self.intercept_point) # TODO
+        self.line.set_slope(self.slope) # TODO
 
         # # Update text position # TODO
         # ylim = self.ax.get_ylim()
@@ -59,4 +60,14 @@ class LinearApproxLine:
         # self.text.set_text(f"x={x:.2f}")
 
         self.canvas.draw()
+        return
+
+    def hide(self) -> None:
+        self.line.set_linestyle("None")
+        # self.text.set_visible(False)
+        return
+    
+    def show(self) -> None:
+        self.line.set_linestyle("solid")
+        # self.text.set_visible(True)
         return
