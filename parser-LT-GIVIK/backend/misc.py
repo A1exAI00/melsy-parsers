@@ -1,4 +1,5 @@
 from typing import List
+from datetime import timedelta
 
 import numpy as np
 from sklearn.linear_model import LinearRegression
@@ -55,3 +56,38 @@ def find_best_linear_subset(
                 best_end = end
 
     return best_start, best_end, best_r2, slope, intercept
+
+def convert_string_to_timedelta(string: str) -> timedelta:
+    H, M, S = [int(each) for each in string.split(":")]
+    return timedelta(hours=H, minutes=M, seconds=S)
+
+
+def convert_timedelta_to_hours(delta: timedelta) -> float:
+    return delta.total_seconds()/3600
+
+
+def normalize_time(times: List[float]) -> List[float]:
+    delta_t_threshold = 1  # h
+    normal_time = [times[0],]
+    base_time = 0.0
+    for i in range(len(times)-1):
+        t1, t2 = times[i], times[i+1]
+        if abs(t2-t1) > delta_t_threshold:
+            base_time += t1
+        normal_time.append(base_time+t2)
+    return normal_time
+
+
+def convert_hours_float_to_timedelta(hours: float) -> timedelta:
+    return timedelta(seconds=hours*3600)
+
+
+def convert_timedelta_to_string(td: timedelta) -> str:
+    D, S = td.days, td.seconds
+    H = D*24 + S//3600
+    rem_S = S % 3600
+    M = rem_S//60
+    rem_S = rem_S % 60
+    HMS_strs = [str(H).rjust(2, "0"), str(
+        M).rjust(2, "0"), str(rem_S).rjust(2, "0")]
+    return ":".join(HMS_strs)
