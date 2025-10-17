@@ -37,6 +37,8 @@ class MainWindow(QMainWindow):
 
         self.tab_widget = QTabWidget()
         self.setCentralWidget(self.tab_widget)
+
+        self.add_LT_tab()
         return
     
     def create_menubar(self):
