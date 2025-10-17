@@ -12,7 +12,7 @@ from PySide6.QtWidgets import (
 )
 import clipboard as clip
 
-from backend.Data import Data
+from backend.LTdata import LTdata, LTparser
 from app.MainController import MainController
 from app.SubController import SubController
 from app.SubwindowPlot import SubwindowPlot
@@ -37,7 +37,7 @@ class SubwindowResult(QMdiSubWindow):
         self.setup_ui(self.datas)
         return
 
-    def setup_ui(self, datas: List[Data]) -> None:
+    def setup_ui(self, datas: List[LTdata]) -> None:
         # Add new subwindow to Mdi Area
         self.setWindowTitle("LT table window")
         self.mdi.addSubWindow(self)
@@ -93,20 +93,19 @@ class SubwindowResult(QMdiSubWindow):
 
         # Edit table
         for data_i, data in enumerate(datas):
-            # Append additional data
+            # Append naming
             if self.add_naming:
-                self.append_to_results_table(data.get_naming())
-            for name, value in zip(
-                data.additional_data_names, data.additional_data_values
-            ):
+                self.append_to_results_table(("Name", data.other_data["Name"]))
+
+            # Append other data
+            for name, value in data.other_data.items():
+                if name == "Name":
+                    continue
                 self.append_to_results_table((name, value))
 
             # Append LT data
             for i, (name, values) in enumerate(data.LT.items()):
-                curr_line = [
-                    name,
-                ] + values
-                self.append_to_results_table(curr_line)
+                self.append_to_results_table([name,] + values)
 
             # Append empty row spacer
             if data_i != len(datas) - 1:
@@ -147,21 +146,21 @@ class SubwindowResult(QMdiSubWindow):
                 self.table.item(self.table.rowCount() - 1, i).setText(f"{value:.5f}")
         return
 
-    def create_power_plot_window_slot(self, datas: List[Data]) -> None:
+    def create_power_plot_window_slot(self, datas: List[LTdata]) -> None:
         new_window = SubwindowPlot(
             self.sub_controller, self.mdi, role="power", datas=datas
         )
         self.power_plot_subwindows.append(new_window)
         return
 
-    def create_voltage_plot_window_slot(self, datas: List[Data]) -> None:
+    def create_voltage_plot_window_slot(self, datas: List[LTdata]) -> None:
         new_window = SubwindowPlot(
             self.sub_controller, self.mdi, role="voltage", datas=datas
         )
         self.voltage_plot_subwindows.append(new_window)
         return
 
-    def create_temperature_plot_window_slot(self, datas: List[Data]) -> None:
+    def create_temperature_plot_window_slot(self, datas: List[LTdata]) -> None:
         new_window = SubwindowPlot(
             self.sub_controller, self.mdi, role="temperature", datas=datas
         )

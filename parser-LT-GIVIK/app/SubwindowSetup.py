@@ -19,7 +19,7 @@ from PySide6.QtWidgets import (
     QLabel,
 )
 
-from backend.Data import Data
+from backend.LTdata import LTdata, LTparser
 from app.MainController import MainController
 
 
@@ -216,8 +216,9 @@ class SubwindowSetup(QMdiSubWindow):
             self.table.item(current_row, 2).setText(file_basename)
         return
 
-    def parse(self) -> List[Data]:
-        datas: List[Data] = []
+    def parse(self) -> List[LTdata]:
+        parser = LTparser()
+        datas: List[LTdata] = []
         for i in range(1, self.table.rowCount()):
             # Get filepath from GUI
             item = self.table.item(i, 0)
@@ -228,15 +229,10 @@ class SubwindowSetup(QMdiSubWindow):
                 continue
 
             # Parse file to data
-            data = Data(filepath)
-            data.read_lines_from_file()
-            data.parse_GIVIK_version()
-            data.parse_LT()
-            data.parse_additional_data()
+            data = parser.parse(filepath)
 
             # Get part name from GUI, add to data
-            name_str = self.table.item(i, 2).text()
-            data.add_naming(name_str)
+            data.add_other_data("Name", self.table.item(i, 2).text())
 
             datas.append(data)
         return datas

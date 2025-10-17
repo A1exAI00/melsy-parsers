@@ -12,7 +12,7 @@ from PySide6.QtWidgets import (
     QTableWidget,
 )
 
-from backend.Data import Data
+from backend.LTdata import LTdata
 from app.SubController import SubController
 from app.PlotController import PlotController
 from app.ModifiedToolbar import ModifiedToolbar
@@ -22,7 +22,7 @@ from app.LinearApproxLine import LinearApproxLine
 
 class SubwindowPlot(QMdiSubWindow):
     def __init__(
-        self, controller: "SubController", mdi: QMdiArea, role: str, datas: List[Data]
+        self, controller: "SubController", mdi: QMdiArea, role: str, datas: List[LTdata]
     ) -> None:
         self.controller = controller
         self.plot_controller = PlotController()
@@ -100,7 +100,7 @@ class SubwindowPlot(QMdiSubWindow):
         for data in datas:
             X_data = data.LT[X_axis_label]
             Y_data = data.LT[Y_axis_label]
-            label = data.naming_data["Name"]
+            label = data.other_data["Name"]
             self.mplwidget.plot(X_data, Y_data, label=label, linewidth=1)
 
         self.plot_controller.touch_legend.emit()
@@ -138,7 +138,7 @@ class SubwindowPlot(QMdiSubWindow):
                 }
             """
         for data_i, data in enumerate(datas):
-            table.setCellWidget(data_i, 0, QLabel(data.naming_data["Name"]))
+            table.setCellWidget(data_i, 0, QLabel(data.other_data["Name"]))
 
             checkbox_show = QCheckBox()
             checkbox_show.setChecked(True)
