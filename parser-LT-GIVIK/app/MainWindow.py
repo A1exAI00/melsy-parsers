@@ -2,14 +2,17 @@ from typing import List, Dict
 
 from PySide6.QtWidgets import (
     QMainWindow,
+    QWidget,
     QMdiArea,
     QMdiSubWindow,
+    QTabWidget,
+    QVBoxLayout,
 )
 from PySide6.QtGui import QAction
 
 from app.MainController import MainController
-from app.SubwindowSetup import SubwindowSetup
-from app.SubwindowResult import SubwindowResult
+from app.LT.SubwindowSetup import SubwindowSetup
+from app.LT.SubwindowResult import SubwindowResult
 
 
 class MainWindow(QMainWindow):
@@ -30,20 +33,31 @@ class MainWindow(QMainWindow):
         self.setWindowTitle(self.window_title)
         self.setGeometry(100, 100, 1600, 800)
 
-        self.mdi = QMdiArea()
-        self.setCentralWidget(self.mdi)
-
         self.create_menubar()
-        return
 
+        self.tab_widget = QTabWidget()
+        self.setCentralWidget(self.tab_widget)
+        return
+    
     def create_menubar(self):
         menubar = self.menuBar()
-
         file_menu = menubar.addMenu("&Click me!")
-
-        new_action = QAction("&Open setup window", self)
-        new_action.triggered.connect(self.create_setup_window)
+        new_action = QAction("&Open LT", self)
+        new_action.triggered.connect(self.add_LT_tab)
         file_menu.addAction(new_action)
+        return
+    
+    def add_LT_tab(self) -> None:
+        mdi = QMdiArea()
+        # mdi.setViewMode(QMdiArea.TabbedView)
+
+        tab_widget = QWidget()
+        tab_layout = QVBoxLayout(tab_widget)
+        tab_layout.addWidget(mdi)
+        
+        self.tab_widget.addTab(tab_widget, "LT")
+        self.subwindow_setup = SubwindowSetup(self.controller, mdi)
+
         return
 
     def connect_controller(self) -> None:
@@ -64,12 +78,12 @@ class MainWindow(QMainWindow):
     def start_cooldown_release_slot(self) -> None:
         self.start_cooldown_active = False
 
-    def create_setup_window(self) -> None:
-        self.subwindow_setup = SubwindowSetup(self.controller, self.mdi)
-        return
-
     def create_and_append_result_window(self, _dict) -> None:
         index = len(self.result_windows)
-        new_window = SubwindowResult(self.controller, self.mdi, index, _dict)
-        self.result_windows.append(new_window)
+        current_widget = self.tab_widget.currentWidget()
+        if current_widget:
+            mdi_area = current_widget.findChild(QMdiArea)
+            if mdi_area:
+                new_window = SubwindowResult(self.controller, mdi_area, index, _dict)
+                self.result_windows.append(new_window)
         return
