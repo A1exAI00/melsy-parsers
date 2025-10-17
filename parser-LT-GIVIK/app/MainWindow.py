@@ -7,7 +7,6 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtGui import QAction
 
-from backend.Data import Data
 from app.MainController import MainController
 from app.SubwindowSetup import SubwindowSetup
 from app.SubwindowResult import SubwindowResult

@@ -1,9 +1,7 @@
 from typing import Tuple, List
-from time import time
 
 from matplotlib.axes import Axes
 
-from backend.misc import find_best_linear_subset
 from app.PlotController import PlotController
 
 
