@@ -12,7 +12,7 @@ from PySide6.QtWidgets import (
 )
 import clipboard as clip
 
-from backend.LTdata import LTdata
+from backend.LIVdata import LIVdata
 from app.MainController import MainController
 from app.SubController import SubController
 from app.SubwindowPlot import SubwindowPlot
@@ -37,9 +37,9 @@ class SubwindowResult(QMdiSubWindow):
         self.setup_ui(self.datas)
         return
 
-    def setup_ui(self, datas: List[LTdata]) -> None:
+    def setup_ui(self, datas: List[LIVdata]) -> None:
         # Add new subwindow to Mdi Area
-        self.setWindowTitle("LT table window")
+        self.setWindowTitle("LIV result window")
         self.mdi.addSubWindow(self)
 
         # Define subwindow layout
@@ -55,31 +55,31 @@ class SubwindowResult(QMdiSubWindow):
         self.quick_clipboard_button.clicked.connect(self.quick_clipboard_slot)
         box.addWidget(self.quick_clipboard_button)
 
-        self.show_plot_button = QPushButton("Open power(time) plot")
-        self.show_plot_button.clicked.connect(
+        show_plot_button = QPushButton("Open power(set current) plot")
+        show_plot_button.clicked.connect(
             lambda: self.create_power_plot_window_slot(datas)
         )
-        box.addWidget(self.show_plot_button)
+        box.addWidget(show_plot_button)
 
-        self.show_plot_button = QPushButton("Open voltage(time) plot")
-        self.show_plot_button.clicked.connect(
+        show_plot_button = QPushButton("Open voltage(set current) plot")
+        show_plot_button.clicked.connect(
             lambda: self.create_voltage_plot_window_slot(datas)
         )
-        box.addWidget(self.show_plot_button)
+        box.addWidget(show_plot_button)
 
-        self.show_plot_button = QPushButton("Open temperature(time) plot")
-        self.show_plot_button.clicked.connect(
-            lambda: self.create_temperature_plot_window_slot(datas)
+        show_plot_button = QPushButton("Open spectrum mean(set current) plot")
+        show_plot_button.clicked.connect(
+            lambda: self.create_spectrum_mean_plot_window_slot(datas)
         )
-        box.addWidget(self.show_plot_button)
+        box.addWidget(show_plot_button)
 
         table_window_layout.addLayout(box)
 
         N_cols = []
         for data in datas:
-            LT = data.LT
-            LT_rows = list(LT.values())
-            for row in LT_rows:
+            LIV = data.LIV
+            LIV_rows = list(LIV.values())
+            for row in LIV_rows:
                 N_cols.append(len(row) + 1)
         max_cols = max(N_cols)
 
@@ -103,8 +103,8 @@ class SubwindowResult(QMdiSubWindow):
                     continue
                 self.append_to_results_table((name, value))
 
-            # Append LT data
-            for i, (name, values) in enumerate(data.LT.items()):
+            # Append LIV data
+            for i, (name, values) in enumerate(data.LIV.items()):
                 self.append_to_results_table([name,] + values)
 
             # Append empty row spacer
@@ -146,27 +146,26 @@ class SubwindowResult(QMdiSubWindow):
                 self.table.item(self.table.rowCount() - 1, i).setText(f"{value:.5f}")
         return
 
-    def create_power_plot_window_slot(self, datas: List[LTdata]) -> None:
+    def create_power_plot_window_slot(self, datas: List[LIVdata]) -> None:
         new_window = SubwindowPlot(
-            self.sub_controller, self.mdi, role="LTpower", datas=datas
+            self.sub_controller, self.mdi, role="LIVpower", datas=datas
         )
         self.power_plot_subwindows.append(new_window)
         return
 
-    def create_voltage_plot_window_slot(self, datas: List[LTdata]) -> None:
+    def create_voltage_plot_window_slot(self, datas: List[LIVdata]) -> None:
         new_window = SubwindowPlot(
-            self.sub_controller, self.mdi, role="LTvoltage", datas=datas
+            self.sub_controller, self.mdi, role="LIVvoltage", datas=datas
         )
         self.voltage_plot_subwindows.append(new_window)
         return
-
-    def create_temperature_plot_window_slot(self, datas: List[LTdata]) -> None:
+    
+    def create_spectrum_mean_plot_window_slot(self, datas: List[LIVdata]) -> None:
         new_window = SubwindowPlot(
-            self.sub_controller, self.mdi, role="LTtemperature", datas=datas
+            self.sub_controller, self.mdi, role="LIVspectrummean", datas=datas
         )
-        self.temperature_plot_subwindows.append(new_window)
+        self.voltage_plot_subwindows.append(new_window)
         return
-
     def closeEvent(self, closeEvent):
         all_windows = (
             self.power_plot_subwindows

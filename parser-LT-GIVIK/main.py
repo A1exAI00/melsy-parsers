@@ -13,5 +13,5 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
     controller = MainController()
     window = MainWindow(controller)
-    window.show()
+    window.showMaximized()
     sys.exit(app.exec())

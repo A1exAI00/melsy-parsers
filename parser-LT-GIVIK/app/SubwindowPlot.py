@@ -13,16 +13,20 @@ from PySide6.QtWidgets import (
 )
 
 from backend.LTdata import LTdata
+from backend.LIVdata import LIVdata
 from app.SubController import SubController
 from app.PlotController import PlotController
 from app.ModifiedToolbar import ModifiedToolbar
 from app.MplWidget import MplWidget
-from app.LinearApproxLine import LinearApproxLine
 
 
 class SubwindowPlot(QMdiSubWindow):
     def __init__(
-        self, controller: "SubController", mdi: QMdiArea, role: str, datas: List[LTdata]
+        self,
+        controller: "SubController",
+        mdi: QMdiArea,
+        role: str,
+        datas: List[LIVdata | LTdata],
     ) -> None:
         self.controller = controller
         self.plot_controller = PlotController()
@@ -40,25 +44,86 @@ class SubwindowPlot(QMdiSubWindow):
     def setup_ui(self) -> None:
         datas = None
         match self.role:
-            case "power":
+            case "LIVpower":
+                this_title = "LIV power(set current) plot window"
+                X_axis_label = "Set, A"
+                Y_axis_label = "Power, W"
+                labels = []
+                X_arrays = []
+                Y_arrays = []
+                keys_filter = ["Power, W", "OPM"]
+                for data in self.datas:
+                    for key in keys_filter:
+                        if key in data.LIV.keys():
+                            labels.append(data.other_data["Name"])
+                            X_arrays.append(data.LIV["Set, A"])
+                            Y_arrays.append(data.LIV[key])
+                sub_x_position, sub_y_position = 1003, 3
+                sub_w, sub_h = 500, 800
+            case "LIVvoltage":
+                this_title = "LIV vontage(set current) plot window"
+                X_axis_label = "Set, A"
+                Y_axis_label = "Voltage, V"
+                labels = []
+                X_arrays = []
+                Y_arrays = []
+                keys_filter = ["Voltage, V", "AI_Voltage"]
+                for data in self.datas:
+                    for key in keys_filter:
+                        if key in data.LIV.keys():
+                            labels.append(data.other_data["Name"])
+                            X_arrays.append(data.LIV["Set, A"])
+                            Y_arrays.append(data.LIV[key])
+                sub_x_position, sub_y_position = 1003, 3
+                sub_w, sub_h = 500, 800
+            case "LIVspectrummean":
+                this_title = "LIV WLmean(set current) plot window"
+                X_axis_label = "Set, A"
+                Y_axis_label = "WLmean, nm"
+                labels = []
+                X_arrays = []
+                Y_arrays = []
+                for data in self.datas:
+                    keys = data.LIV.keys()
+                    this_name = data.other_data["Name"]
+                    for key in keys:
+                        if "WLmean, nm" in key:
+                            labels.append(this_name + str(key)[len("WLmean, nm") :])
+                            X_arrays.append(data.LIV["Set, A"])
+                            Y_arrays.append(data.LIV[key])
+                sub_x_position, sub_y_position = 1003, 3
+                sub_w, sub_h = 500, 800
+            case "LTpower":
                 this_title = "LT power(time) plot window"
                 X_axis_label = "Reletive time, h"
                 Y_axis_label = "Power (avg), W"
-                datas = self.datas
+                labels = [data.other_data["Name"] for data in self.datas]
+                X_arrays = [data.LT["Reletive time, h"] for data in self.datas]
+                Y_arrays = [data.LT["Power (avg), W"] for data in self.datas]
                 sub_x_position, sub_y_position = 1003, 3
                 sub_w, sub_h = 500, 800
-            case "voltage":
+            case "LTvoltage":
                 this_title = "LT voltage(time) plot window"
                 X_axis_label = "Reletive time, h"
                 Y_axis_label = "Voltage, V"
-                datas = list(filter(lambda each: each.GIVIK_version == 2, self.datas))
+                datas: List[LTdata] = list(
+                    filter(lambda each: each.GIVIK_version == 2, self.datas)
+                )
+                labels = [data.other_data["Name"] for data in datas]
+                X_arrays = [data.LT["Reletive time, h"] for data in datas]
+                Y_arrays = [data.LT["Power (avg), W"] for data in datas]
                 sub_x_position, sub_y_position = 1103, 3
                 sub_w, sub_h = 500, 800
-            case "temperature":
+            case "LTtemperature":
                 this_title = "LT temperature(time) plot window"
                 X_axis_label = "Reletive time, h"
                 Y_axis_label = "Tank water temp., C"
-                datas = list(filter(lambda each: each.GIVIK_version == 2, self.datas))
+                datas: List[LTdata] = list(
+                    filter(lambda each: each.GIVIK_version == 2, self.datas)
+                )
+                labels = [data.other_data["Name"] for data in datas]
+                X_arrays = [data.LT["Reletive time, h"] for data in datas]
+                Y_arrays = [data.LT["Power (avg), W"] for data in datas]
                 sub_x_position, sub_y_position = 1203, 3
                 sub_w, sub_h = 500, 800
 
@@ -97,10 +162,9 @@ class SubwindowPlot(QMdiSubWindow):
         plot_window_layout.addWidget(self.mplwidget)
 
         # Add plot lines
-        for data in datas:
-            X_data = data.LT[X_axis_label]
-            Y_data = data.LT[Y_axis_label]
-            label = data.other_data["Name"]
+        for i, label in enumerate(labels):
+            X_data = X_arrays[i]
+            Y_data = Y_arrays[i]
             self.mplwidget.plot(X_data, Y_data, label=label, linewidth=1)
 
         self.plot_controller.touch_legend.emit()
@@ -115,7 +179,7 @@ class SubwindowPlot(QMdiSubWindow):
 
         table = QTableWidget()
         table.setColumnCount(3)
-        table.setRowCount(len(datas))
+        table.setRowCount(len(labels))
         table.setHorizontalHeaderLabels(["Naming", "Show", "Approx."])
         table.setColumnWidth(0, 250)
         table.resizeColumnToContents(1)
@@ -129,31 +193,31 @@ class SubwindowPlot(QMdiSubWindow):
         plot_window_layout.addWidget(table)
 
         # Generate checkboxes in a grid
-        checkboxes_show = []
-        checkboxes_approx = []
+        checkboxes_show: List[QCheckBox] = []
+        checkboxes_approx: List[QCheckBox] = []
         checkbox_style = """
                 QCheckBox::indicator {
                     width: 25px;
                     height: 25px;
                 }
             """
-        for data_i, data in enumerate(datas):
-            table.setCellWidget(data_i, 0, QLabel(data.other_data["Name"]))
+        for i, label in enumerate(labels):
+            table.setCellWidget(i, 0, QLabel(label))
 
             checkbox_show = QCheckBox()
             checkbox_show.setChecked(True)
             checkbox_show.setStyleSheet(checkbox_style)
-            table.setCellWidget(data_i, 1, checkbox_show)
+            table.setCellWidget(i, 1, checkbox_show)
             checkboxes_show.append(checkbox_show)
 
             checkbox_approx = QCheckBox()
             # checkbox_approx.setChecked(False)
             checkbox_approx.setStyleSheet(checkbox_style)
-            table.setCellWidget(data_i, 2, checkbox_approx)
+            table.setCellWidget(i, 2, checkbox_approx)
             checkboxes_approx.append(checkbox_approx)
 
         # Connect visibility slots and signals
-        for i, data in enumerate(datas):
+        for i, label in enumerate(labels):
             checkboxes_show[i].stateChanged.connect(
                 lambda _, i=i: self.plot_controller.plot_visibility_toggled.emit(i)
             )

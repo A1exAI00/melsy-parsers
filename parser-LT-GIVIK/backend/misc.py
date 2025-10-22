@@ -1,5 +1,7 @@
 from typing import List
 from datetime import timedelta
+from os.path import dirname
+
 
 import numpy as np
 from sklearn.linear_model import LinearRegression
@@ -91,3 +93,9 @@ def convert_timedelta_to_string(td: timedelta) -> str:
     HMS_strs = [str(H).rjust(2, "0"), str(
         M).rjust(2, "0"), str(rem_S).rjust(2, "0")]
     return ":".join(HMS_strs)
+
+def get_3_parents_dirs(filepath: str) -> List[str]:
+    parent1 = dirname(filepath)
+    parent2 = dirname(parent1)
+    parent3 = dirname(parent2)
+    return (parent1, parent2, parent3)

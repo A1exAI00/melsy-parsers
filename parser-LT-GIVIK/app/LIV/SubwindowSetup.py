@@ -19,7 +19,8 @@ from PySide6.QtWidgets import (
     QLabel,
 )
 
-from backend.LTdata import LTdata, LTparser
+from backend.misc import get_3_parents_dirs
+from backend.LIVdata import LIVdata, LIVparser
 from app.MainController import MainController
 
 
@@ -52,7 +53,7 @@ class SubwindowSetup(QMdiSubWindow):
         box = QHBoxLayout()
         filename_filter_label = QLabel(text="Filename filter")
         box.addWidget(filename_filter_label)
-        self.filename_filter = QLineEdit("")
+        self.filename_filter = QLineEdit("LIV|SPEC")
         box.addWidget(self.filename_filter)
         window_layout.addLayout(box)
 
@@ -77,23 +78,46 @@ class SubwindowSetup(QMdiSubWindow):
         # Create table widget
         self.table = QTableWidget()
         self.table.setRowCount(1)
-        self.table.setColumnCount(3)
+        self.table.setColumnCount(5)
         self.table.setVerticalScrollMode(QTableWidget.ScrollPerPixel)
         self.table.setHorizontalScrollMode(QTableWidget.ScrollPerPixel)
+        self.table.setHorizontalHeaderLabels(["Path", "", "Type prod", "Date", "№ Rad"])
 
-        self.table.setHorizontalHeaderLabels(["Path", "", "Naming"])
+        type_prod_overwrite_widget = QWidget()
+        type_prod_overwrite_box = QHBoxLayout()
+        type_prod_overwrite_box.setContentsMargins(0, 0, 0, 0)
+        self.type_prod_overwrite_edit = QLineEdit()
+        self.type_prod_overwrite_edit.setPlaceholderText("2525")
+        type_prod_overwrite_button = QPushButton("Replace")
+        type_prod_overwrite_button.clicked.connect(self.type_prod_overwrite_slot)
+        type_prod_overwrite_box.addWidget(self.type_prod_overwrite_edit)
+        type_prod_overwrite_box.addWidget(type_prod_overwrite_button)
+        type_prod_overwrite_widget.setLayout(type_prod_overwrite_box)
+        self.table.setCellWidget(0, 2, type_prod_overwrite_widget)
 
-        naming_overwrite_widget = QWidget()
-        naming_overwrite_box = QHBoxLayout()
-        naming_overwrite_box.setContentsMargins(0, 0, 0, 0)
-        self.naming_overwrite_edit = QLineEdit()
-        self.naming_overwrite_edit.setPlaceholderText("2525_9999_01")
-        naming_overwrite_button = QPushButton("Replace")
-        naming_overwrite_button.clicked.connect(self.naming_overwrite_slot)
-        naming_overwrite_box.addWidget(self.naming_overwrite_edit)
-        naming_overwrite_box.addWidget(naming_overwrite_button)
-        naming_overwrite_widget.setLayout(naming_overwrite_box)
-        self.table.setCellWidget(0, 2, naming_overwrite_widget)
+        date_overwrite_widget = QWidget()
+        date_overwrite_box = QHBoxLayout()
+        date_overwrite_box.setContentsMargins(0, 0, 0, 0)
+        self.date_overwrite_edit = QLineEdit()
+        self.date_overwrite_edit.setPlaceholderText("9999")
+        date_overwrite_button = QPushButton("Replace")
+        date_overwrite_button.clicked.connect(self.date_overwrite_slot)
+        date_overwrite_box.addWidget(self.date_overwrite_edit)
+        date_overwrite_box.addWidget(date_overwrite_button)
+        date_overwrite_widget.setLayout(date_overwrite_box)
+        self.table.setCellWidget(0, 3, date_overwrite_widget)
+
+        n_rad_overwrite_widget = QWidget()
+        n_rad_overwrite_box = QHBoxLayout()
+        n_rad_overwrite_box.setContentsMargins(0, 0, 0, 0)
+        self.n_rad_overwrite_edit = QLineEdit()
+        self.n_rad_overwrite_edit.setPlaceholderText("01")
+        n_rad_overwrite_button = QPushButton("Replace")
+        n_rad_overwrite_button.clicked.connect(self.n_rad_overwrite_slot)
+        n_rad_overwrite_box.addWidget(self.n_rad_overwrite_edit)
+        n_rad_overwrite_box.addWidget(n_rad_overwrite_button)
+        n_rad_overwrite_widget.setLayout(n_rad_overwrite_box)
+        self.table.setCellWidget(0, 4, n_rad_overwrite_widget)
 
         self.add_row_slot()
         window_layout.addWidget(self.table)
@@ -116,8 +140,20 @@ class SubwindowSetup(QMdiSubWindow):
     def connect_controller(self) -> None:
         return
 
-    def naming_overwrite_slot(self) -> None:
-        value = self.naming_overwrite_edit.text()
+    def type_prod_overwrite_slot(self) -> None:
+        value = self.type_prod_overwrite_edit.text()
+        for i in range(1, self.table.rowCount()):
+            self.table.item(i, 2).setText(value)
+        return
+
+    def date_overwrite_slot(self) -> None:
+        value = self.date_overwrite_edit.text()
+        for i in range(1, self.table.rowCount()):
+            self.table.item(i, 2).setText(value)
+        return
+
+    def n_rad_overwrite_slot(self) -> None:
+        value = self.n_rad_overwrite_edit.text()
         for i in range(1, self.table.rowCount()):
             self.table.item(i, 2).setText(value)
         return
@@ -138,6 +174,8 @@ class SubwindowSetup(QMdiSubWindow):
         edit_path_button.clicked.connect(lambda: self.edit_path_slot(row_index))
         self.table.setCellWidget(row_index, 1, edit_path_button)
         self.table.setItem(row_index, 2, QTableWidgetItem())
+        self.table.setItem(row_index, 3, QTableWidgetItem())
+        self.table.setItem(row_index, 4, QTableWidgetItem())
         return
 
     def edit_path_slot(self, row_index: int) -> None:
@@ -173,8 +211,11 @@ class SubwindowSetup(QMdiSubWindow):
             item = self.table.item(current_row, 0)
             item.setText(filepath)
 
-            file_basename = splitext(basename(filepath))[0]
-            self.table.item(current_row, 2).setText(file_basename)
+            # Parse filepath and save parent directories basenames
+            parents_basenames = list(map(basename, get_3_parents_dirs(filepath)))
+            for i in range(len(parents_basenames)):
+                item = self.table.item(current_row, 2 + i)
+                item.setText(list(reversed(parents_basenames))[i])
         return
 
     def edit_path_other_modes(self, row_index: int, recursive: bool = False) -> None:
@@ -212,13 +253,15 @@ class SubwindowSetup(QMdiSubWindow):
             item.setText(filepath)
 
             # Parse filepath and save parent directories basenames
-            file_basename = splitext(basename(filepath))[0]
-            self.table.item(current_row, 2).setText(file_basename)
+            parents_basenames = list(map(basename, get_3_parents_dirs(filepath)))
+            for i in range(len(parents_basenames)):
+                item = self.table.item(current_row, 2 + i)
+                item.setText(list(reversed(parents_basenames))[i])
         return
 
-    def parse(self) -> List[LTdata]:
-        parser = LTparser()
-        datas: List[LTdata] = []
+    def parse(self) -> List[LIVdata]:
+        parser = LIVparser()
+        datas: List[LIVdata] = []
         for i in range(1, self.table.rowCount()):
             # Get filepath from GUI
             item = self.table.item(i, 0)
@@ -232,7 +275,9 @@ class SubwindowSetup(QMdiSubWindow):
             data = parser.parse(filepath)
 
             # Get part name from GUI, add to data
-            data.add_other_data("Name", self.table.item(i, 2).text())
+            name_strs = [self.table.item(i, 2 + j).text() for j in range(3)]
+            name_str = "-".join([each for each in name_strs if each])
+            data.add_other_data("Name", name_str)
 
             datas.append(data)
         return datas
@@ -240,5 +285,5 @@ class SubwindowSetup(QMdiSubWindow):
     def start_slot(self) -> None:
         datas = self.parse()
         _dict = {"datas": datas, "add_naming": self.add_naming_checkbox.isChecked()}
-        self.controller.after_LT_start_pressed_signal.emit(_dict)
+        self.controller.after_LIV_start_pressed_signal.emit(_dict)
         return
