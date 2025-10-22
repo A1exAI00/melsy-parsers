@@ -277,15 +277,22 @@ class MplWidget(QWidget):
         first, last = y_data_window[0], y_data_window[-1]
         texts = []
         match self.role:
-            case "power":
+            case "LIVpower":
                 texts.append(f"k={slope:.3E}")
                 texts.append(f"Δ={(last-first):.3f}")
-            case "voltage":
+            case "LIVvoltage":
+                texts.append(f"k={slope:.3E}")
+            case "LIVspectrummean":
+                texts.append(f"k={slope:.3E}")
+            case "LTpower":
+                texts.append(f"k={slope:.3E}")
+                texts.append(f"Δ={(last-first):.3f}")
+            case "LTvoltage":
                 texts.append(f"Δ={(last-first):.3f}")
                 texts.append(f"mean={_mean:.3f}")
                 texts.append(f"min={_min:.3f}")
                 texts.append(f"max={_max:.3f}")
-            case "temperature":
+            case "LTtemperature":
                 texts.append(f"mean={_mean:.3f}")
                 texts.append(f"min={_min:.3f}")
                 texts.append(f"max={_max:.3f}")
