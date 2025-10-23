@@ -86,7 +86,6 @@ class DraggableVerticalLine:
 
         # Update text position
         ylim = self.ax.get_ylim()
-        print(ylim)
         self.text.set_position((x, ylim[0] + 0.05 * (ylim[1] - ylim[0])))
         self.text.set_text(f"x={x:.2f}")
 
@@ -122,4 +121,10 @@ class DraggableVerticalLine:
         self.mpl_disconnect()
         self.line.set_linestyle("None")
         self.text.set_visible(False)
+        return
+    
+    def delete(self):
+        self.hide()
+        self.line.remove()
+        self.text.remove()
         return

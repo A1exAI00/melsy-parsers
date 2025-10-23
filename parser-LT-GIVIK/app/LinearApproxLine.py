@@ -27,6 +27,7 @@ class LinearApproxLine:
             slope=self.slope,
             color=self.color,
             linewidth=self.linewidth,
+            linestyle="--",
         )
         return
 
@@ -54,4 +55,9 @@ class LinearApproxLine:
 
     def set_label(self, label: str) -> None:
         self.line.set_label(label)
+        return
+
+    def delete(self):
+        self.hide()
+        self.line.remove()
         return

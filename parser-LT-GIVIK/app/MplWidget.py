@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Tuple
 from time import time
 import re
 from statistics import mean
@@ -14,6 +14,7 @@ from matplotlib.ticker import (
     AutoLocator,
 )
 import mplcursors
+import numpy as np
 
 from backend.misc import create_linear_approximation
 from app.DraggableLine import DraggableVerticalLine
@@ -112,12 +113,16 @@ class MplWidget(QWidget):
         index = len(self.draggable_lines)
 
         # Add and hide a pair of draggable lines
-        self.add_draggable_lines()
-        self.hide_draggable_lines(index)
+        self.draggable_lines.append(None)
+        self.draggable_lines_visibibity.append(False)
+        # self.add_draggable_lines()
+        # self.hide_draggable_lines(index)
 
         # Add and hide approximation line
-        self.add_approx_line()
-        self.hide_approx_line(index)
+        self.approx_lines.append(None)
+        self.approx_lines_visibility.append(False)
+        # self.add_approx_line()
+        # self.hide_approx_line(index)
         return
 
     def hide_plot(self, index: int) -> None:
@@ -146,8 +151,7 @@ class MplWidget(QWidget):
     # PAIRS OF DRAGGABLE LINES #################################################
     ############################################################################
 
-    def add_draggable_lines(self):
-        index = len(self.draggable_lines)
+    def add_draggable_lines(self, index: int):
         color = self.lines[index][0].get_color()
         xlim = self.axes.get_xlim()
         line1 = DraggableVerticalLine(
@@ -166,82 +170,85 @@ class MplWidget(QWidget):
             linewidth=1,
         )
         line2.connect_controller(self.controller)
-        self.draggable_lines.append([line1, line2])
-        self.draggable_lines_visibibity.append(True)
+        self.draggable_lines[index] = [line1, line2]
+        self.draggable_lines_visibibity[index] = True
         return
 
-    def hide_draggable_lines(self, index: int) -> None:
+    def delete_draggable_lines(self, index: int) -> None:
         self.draggable_lines_visibibity[index] = False
         lines = self.draggable_lines[index]
         for line in lines:
-            line.hide()
+            line.delete()
+        self.draggable_lines[index] = None
         return
 
     def show_draggable_lines(self, index: int) -> None:
-        self.draggable_lines_visibibity[index] = True
-        lines = self.draggable_lines[index]
-        for line in lines:
-            line.show()
+        self.add_draggable_lines(index)
         return
 
     def draggable_visibility_toggled_slot(self, index: int) -> None:
         prev_visible = self.draggable_lines_visibibity[index]
         if prev_visible:
-            self.hide_draggable_lines(index)
+            self.delete_draggable_lines(index)
         else:
             self.show_draggable_lines(index)
+            # self.controller.draggable_changed_position.emit(index)
         self.controller.touch_plot.emit()
-        self.controller.draggable_changed_position.emit(index)
         return
 
     ############################################################################
     # APPROXIMATION LINES ######################################################
     ############################################################################
 
-    def add_approx_line(self) -> None:
-        index = len(self.approx_lines)
+    def add_approx_line(self, index: int) -> None:
         color = self.lines[index][0].get_color()
-        line = LinearApproxLine(self.axes, (0.0, 0.0), 0.0, color=color, linewidth=1)
+        self.approx_lines_visibility[index] = True
+        try:
+            slope, intersept, _, _ = self.approx_line_calculate_new_position(index)
+        except:
+            slope = 0.0
+            ylim = self.axes.get_ylim()
+            intersept = (ylim[0] + ylim[1])/2
+        line = LinearApproxLine(
+            self.axes,
+            intercept_point=(0.0, intersept),
+            slope=slope,
+            color=color,
+            linewidth=1,
+        )
         line.connect_controller(self.controller)
-        self.approx_lines.append(line)
-        self.approx_lines_visibility.append(True)
+        self.approx_lines[index] = line
         return
 
-    def hide_approx_line(self, index: int) -> None:
+    def delete_approx_line(self, index: int) -> None:
         line = self.approx_lines[index]
         self.approx_lines_visibility[index] = False
-        line.hide()
-        return
-
-    def show_approx_line(self, index: int) -> None:
-        line = self.approx_lines[index]
-        self.approx_lines_visibility[index] = True
-        line.show()
-        self.controller.draggable_changed_position.emit(index)
+        line.delete()
+        self.approx_lines[index] = None
         return
 
     def approx_line_visibility_toggled_slot(self, index: int) -> None:
         prev_visible = self.approx_lines_visibility[index]
         if prev_visible:
-            self.hide_approx_line(index)
+            self.delete_approx_line(index)
         else:
-            self.show_approx_line(index)
+            self.add_approx_line(index)
             # TODO find best linear section
         self.controller.touch_plot.emit()
         return
 
-    def approx_line_update_position_slot(self, index: int) -> None:
+    def approx_line_calculate_new_position(self, index: int) -> Tuple[float, float]:
         # Do nothing if approx line is hidden
         if not self.approx_lines_visibility[index]:
             return
 
         # Save compute by waiting for cooldown
-        if (
-            time() - self.approx_lines_last_update_time
-            < self.approx_lines_update_cooldown
-        ):
-            return
-        self.approx_lines_last_update_time = time()
+        # if (
+        #     time() - self.approx_lines_last_update_time
+        #     < self.approx_lines_update_cooldown
+        # ):
+        #     return
+        # self.approx_lines_last_update_time = time()
 
         # Get data from the plot
         x_data_all = self.lines[index][0].get_xdata(orig=True)
@@ -261,11 +268,25 @@ class MplWidget(QWidget):
 
         # Ignore of there are no points between draggable lines
         if not x_indexes_window:
-            return
+            raise Exception("Not enough points to approximate plot")
 
-        x_data_window = [x_data_all[i] for i in x_indexes_window]
-        y_data_window = [y_data_all[i] for i in x_indexes_window]
+        x_data_window = []
+        y_data_window = []
+        for i in x_indexes_window:
+            tmpx = x_data_all[i]
+            tmpy = y_data_all[i]
+            if np.isnan(tmpx) or np.isnan(tmpy):
+                continue
+            x_data_window.append(tmpx)
+            y_data_window.append(tmpy)
+
         _, slope, intersept = create_linear_approximation(x_data_window, y_data_window)
+        return slope, intersept, x_data_window, y_data_window
+
+    def approx_line_update_position_slot(self, index: int) -> None:
+        slope, intersept, x_data_window, y_data_window = (
+            self.approx_line_calculate_new_position(index)
+        )
 
         # Update approx line position and display parameters on the legend
         line = self.approx_lines[index]

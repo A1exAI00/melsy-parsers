@@ -115,10 +115,10 @@ class SubwindowPlot(QMdiSubWindow):
                 )
                 labels = [data.other_data["Name"] for data in datas]
                 X_arrays = [data.LT["Reletive time, h"] for data in datas]
-                Y_arrays = [data.LT["Power (avg), W"] for data in datas]
+                Y_arrays = [data.LT["Voltage, V"] for data in datas]
                 sub_x_position, sub_y_position = 1103, 3
                 sub_w, sub_h = 500, 800
-                axhline_needed, axvline_needed = True, True
+                axhline_needed, axvline_needed = False, True
             case "LTtemperature":
                 this_title = "LT temperature(time) plot window"
                 X_axis_label = "Reletive time, h"
@@ -128,10 +128,10 @@ class SubwindowPlot(QMdiSubWindow):
                 )
                 labels = [data.other_data["Name"] for data in datas]
                 X_arrays = [data.LT["Reletive time, h"] for data in datas]
-                Y_arrays = [data.LT["Power (avg), W"] for data in datas]
+                Y_arrays = [data.LT["Tank water temp., C"] for data in datas]
                 sub_x_position, sub_y_position = 1203, 3
                 sub_w, sub_h = 500, 800
-                axhline_needed, axvline_needed = True, True
+                axhline_needed, axvline_needed = False, True
             case "PULSEpower":
                 this_title = "PULSE power(set current) plot window"
                 X_axis_label = "Current, A"
@@ -178,7 +178,7 @@ class SubwindowPlot(QMdiSubWindow):
                             Y_arrays.append(data.LIV[key])
                 sub_x_position, sub_y_position = 1203, 3
                 sub_w, sub_h = 500, 800
-                axhline_needed, axvline_needed = True, True
+                axhline_needed, axvline_needed = True, False
             case _:
                 raise Exception("Unknown role of plot window")
 
@@ -221,6 +221,11 @@ class SubwindowPlot(QMdiSubWindow):
             X_data = X_arrays[i]
             Y_data = Y_arrays[i]
             self.mplwidget.plot(X_data, Y_data, label=label, linewidth=1)
+        
+        if axhline_needed:
+            self.mplwidget.axes.axhline(0.0, color="black")
+        if axvline_needed:
+            self.mplwidget.axes.axvline(0.0, color="black")
 
         self.plot_controller.touch_legend.emit()
 
