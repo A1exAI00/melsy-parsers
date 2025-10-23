@@ -299,11 +299,12 @@ class MplWidget(QWidget):
         match self.role:
             case "LIVpower":
                 texts.append(f"k={slope:.3E}")
-                texts.append(f"Δ={(last-first):.3f}")
+                texts.append(f"I₀={(-intersept/slope):.3f}")
             case "LIVvoltage":
                 texts.append(f"k={slope:.3E}")
+                texts.append(f"v0={intersept:.3E}")
             case "LIVspectrummean":
-                texts.append(f"k={slope:.3E}")
+                pass
             case "LTpower":
                 texts.append(f"k={slope:.3E}")
                 texts.append(f"Δ={(last-first):.3f}")
@@ -318,7 +319,7 @@ class MplWidget(QWidget):
                 texts.append(f"max={_max:.3f}")
             case "PULSEpower":
                 texts.append(f"k={slope:.3E}")
-                texts.append(f"Δ={(last-first):.3f}")
+                texts.append(f"I₀={(-intersept/slope):.3f}")
             case "PULSEvoltage":
                 texts.append(f"k={slope:.3E}")
                 texts.append(f"v0={intersept:.3E}")
