@@ -315,6 +315,16 @@ class MplWidget(QWidget):
                 texts.append(f"mean={_mean:.3f}")
                 texts.append(f"min={_min:.3f}")
                 texts.append(f"max={_max:.3f}")
+            case "PULSEpower":
+                texts.append(f"k={slope:.3E}")
+                texts.append(f"Δ={(last-first):.3f}")
+            case "PULSEvoltage":
+                texts.append(f"k={slope:.3E}")
+                texts.append(f"v0={intersept:.3E}")
+            case "PULSEintensity":
+                pass
+            case _:
+                raise Exception(f"{self.role}: unknown role")
         line.set_label("\n".join(texts))
         self.axes.legend()
         return
