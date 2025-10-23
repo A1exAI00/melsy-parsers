@@ -173,7 +173,7 @@ class SubwindowPlot(QMdiSubWindow):
                     this_name = data.other_data["Name"]
                     for key in keys:
                         if "Intensity" in key:
-                            labels.append(this_name + str(key)[len("Intensity") :])
+                            labels.append(str(key)[len("Intensity") :])
                             X_arrays.append(data.LIV["Wavelength, nm"])
                             Y_arrays.append(data.LIV[key])
                 sub_x_position, sub_y_position = 1203, 3
