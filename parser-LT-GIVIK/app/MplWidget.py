@@ -312,13 +312,13 @@ class MplWidget(QWidget):
             y_data_window.append(tmpy)
 
         if len(x_data_window) == 1:
-            return (0.0, y_data_window[0], [x_data_window], [y_data_window])
+            return (0.0, y_data_window[0], x_data_window, y_data_window)
 
         slope = (y_data_window[-1] - y_data_window[0]) / (
             x_data_window[-1] - x_data_window[0]
         )
         intersept = y_data_window[0] - slope * x_data_window[0]
-        return (slope, intersept, [x_data_window], [y_data_window])
+        return (slope, intersept, x_data_window, y_data_window)
 
     def approx_line_update_position_slot(self, index: int) -> None:
         slope, intersept, _, y_data_window = self.approx_function(index)
@@ -326,42 +326,43 @@ class MplWidget(QWidget):
         # Update approx line position and display parameters on the legend
         line = self.approx_lines[index]
         line.set_position(intercept_point=(0.0, intersept), slope=slope)
-        # _min, _max, _mean = min(y_data_window), max(y_data_window), mean(y_data_window)
         _min, _max, _mean = [func(y_data_window) for func in [np.min, np.max, np.mean]]
         first, last = y_data_window[0], y_data_window[-1]
-        texts = []
+
+        # Create annotation text
+        annotation_texts = []
         match self.role:
             case "LIVpower":
-                texts.append(f"k={slope:.3E}")
-                texts.append(f"I₀={(-intersept/slope):.3f}")
+                annotation_texts.append(f"k={slope:.3E}")
+                annotation_texts.append(f"I₀={(-intersept/slope):.3f}")
             case "LIVvoltage":
-                texts.append(f"k={slope:.3E}")
-                texts.append(f"V₀={intersept:.3E}")
+                annotation_texts.append(f"k={slope:.3E}")
+                annotation_texts.append(f"V₀={intersept:.3E}")
             case "LIVspectrummean":
-                texts.append(f"W₀={intersept:.3E}")
+                annotation_texts.append(f"W₀={intersept:.3E}")
             case "LTpower":
-                texts.append(f"k={slope:.3E}")
-                texts.append(f"Δ={(last-first):.3f}")
+                annotation_texts.append(f"k={slope:.3E}")
+                annotation_texts.append(f"Δ={(last-first):.3f}")
             case "LTvoltage":
-                texts.append(f"Δ={(last-first):.3f}")
-                texts.append(f"mean={_mean:.3f}")
-                texts.append(f"min={_min:.3f}")
-                texts.append(f"max={_max:.3f}")
+                annotation_texts.append(f"Δ={(last-first):.3f}")
+                annotation_texts.append(f"mean={_mean:.3f}")
+                annotation_texts.append(f"min={_min:.3f}")
+                annotation_texts.append(f"max={_max:.3f}")
             case "LTtemperature":
-                texts.append(f"mean={_mean:.3f}")
-                texts.append(f"min={_min:.3f}")
-                texts.append(f"max={_max:.3f}")
+                annotation_texts.append(f"mean={_mean:.3f}")
+                annotation_texts.append(f"min={_min:.3f}")
+                annotation_texts.append(f"max={_max:.3f}")
             case "PULSEpower":
-                texts.append(f"k={slope:.3E}")
-                texts.append(f"I₀={(-intersept/slope):.3f}")
+                annotation_texts.append(f"k={slope:.3E}")
+                annotation_texts.append(f"I₀={(-intersept/slope):.3f}")
             case "PULSEvoltage":
-                texts.append(f"k={slope:.3E}")
-                texts.append(f"v0={intersept:.3E}")
+                annotation_texts.append(f"k={slope:.3E}")
+                annotation_texts.append(f"v0={intersept:.3E}")
             case "PULSEintensity":
                 pass
             case _:
                 raise Exception(f"{self.role}: unknown role")
-        line.set_label("\n".join(texts))
+        line.set_label("\n".join(annotation_texts))
         self.controller.touch_legend.emit()
         self.controller.touch_plot.emit()
         return
