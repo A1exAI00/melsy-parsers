@@ -1,4 +1,5 @@
 from PySide6.QtCore import QObject, Signal
+from PySide6.QtWidgets import QLineEdit
 
 
 class PlotController(QObject):
@@ -10,6 +11,8 @@ class PlotController(QObject):
     update_ticks = Signal(tuple)
     show_legend = Signal()
     hide_legend = Signal()
+    approx_mode_changed = Signal(int)
+    cold_wavelength_changed = Signal(QLineEdit)
 
     def __init__(self):
         super().__init__()

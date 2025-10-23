@@ -2,6 +2,7 @@ from typing import List, Dict
 
 from PySide6.QtWidgets import (
     QVBoxLayout,
+    QHBoxLayout,
     QWidget,
     QMdiArea,
     QMdiSubWindow,
@@ -10,6 +11,7 @@ from PySide6.QtWidgets import (
     QLabel,
     QGridLayout,
     QTableWidget,
+    QComboBox,
 )
 from PySide6.QtCore import Qt
 
@@ -217,6 +219,29 @@ class SubwindowPlot(QMdiSubWindow):
         show_legend_checkbox.stateChanged.connect(self.show_legend_checkbox_slot)
         plot_window_layout.addWidget(show_legend_checkbox)
 
+        approx_mode_box = QHBoxLayout()
+        approx_mode_label = QLabel("Approximation mode")
+        approx_mode_combobox = QComboBox()
+        approx_mode_combobox.addItem("Two Point fit")
+        approx_mode_combobox.addItem("Linear Regression fit")
+        approx_mode_box.addWidget(approx_mode_label)
+        approx_mode_box.addWidget(approx_mode_combobox)
+        plot_window_layout.addLayout(approx_mode_box)
+        approx_mode_combobox.currentIndexChanged.connect(self.approx_mode_changed_slot)
+
+        if self.role == "LIVspectrummean":
+            cold_wavelength_box = QHBoxLayout()
+            cold_wavelength_label = QLabel("Cold wavelength, nm")
+            cold_wavelength_edit = QLineEdit(text="805")
+            cold_wavelength_box.addWidget(cold_wavelength_label)
+            cold_wavelength_box.addWidget(cold_wavelength_edit)
+            cold_wavelength_edit.editingFinished.connect(
+                lambda edit=cold_wavelength_edit: self.plot_controller.cold_wavelength_changed.emit(
+                    edit
+                )
+            )
+            plot_window_layout.addLayout(cold_wavelength_box)
+
         # Create canvas backend
         self.mplwidget = MplWidget(
             self.plot_controller,
@@ -224,6 +249,10 @@ class SubwindowPlot(QMdiSubWindow):
             ylabel=Y_axis_label,
             role=self.role,
         )
+        if self.role == "LIVspectrummean":
+            self.mplwidget.secxaxis = None
+            self.plot_controller.cold_wavelength_changed.emit(cold_wavelength_edit)
+
         self.mplwidget.setMinimumHeight(500)
         self.mplwidget.setMinimumWidth(500)
         toolbar = ModifiedToolbar(self.mplwidget.canvas, self.mplwidget.fig, None)
@@ -297,11 +326,12 @@ class SubwindowPlot(QMdiSubWindow):
         return
 
     def show_legend_checkbox_slot(self, state) -> None:
-        print(state)
         if Qt.CheckState(state) == Qt.Checked:
             self.plot_controller.show_legend.emit()
-            print("SHOW")
         else:
             self.plot_controller.hide_legend.emit()
-            print("HIDE")
+        return
+
+    def approx_mode_changed_slot(self, index: int) -> None:
+        self.plot_controller.approx_mode_changed.emit(index)
         return
