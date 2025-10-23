@@ -8,6 +8,8 @@ class PlotController(QObject):
     touch_plot = Signal()
     touch_legend = Signal()
     update_ticks = Signal(tuple)
+    show_legend = Signal()
+    hide_legend = Signal()
 
     def __init__(self):
         super().__init__()

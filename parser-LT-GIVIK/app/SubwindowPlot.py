@@ -11,6 +11,7 @@ from PySide6.QtWidgets import (
     QGridLayout,
     QTableWidget,
 )
+from PySide6.QtCore import Qt
 
 from backend.LTdata import LTdata
 from backend.LIVdata import LIVdata
@@ -197,11 +198,24 @@ class SubwindowPlot(QMdiSubWindow):
         grid_layout_edits = QGridLayout()
         x_multiple_locator_edit = QLineEdit(placeholderText="100")
         y_multiple_locator_edit = QLineEdit(placeholderText="5")
-        grid_layout_edits.addWidget(QLabel("X Axis Multiple Locator"), 0, 0)
-        grid_layout_edits.addWidget(QLabel("Y Axis Multiple Locator"), 1, 0)
+        grid_layout_edits.addWidget(QLabel("X Axis Tick Size"), 0, 0)
         grid_layout_edits.addWidget(x_multiple_locator_edit, 0, 1)
-        grid_layout_edits.addWidget(y_multiple_locator_edit, 1, 1)
+        grid_layout_edits.addWidget(QLabel("Y Axis Tick Size"), 0, 2)
+        grid_layout_edits.addWidget(y_multiple_locator_edit, 0, 3)
         plot_window_layout.addLayout(grid_layout_edits)
+
+        # Connect tick locator signals and slots
+        tmp_slot = lambda edits=(
+            x_multiple_locator_edit,
+            y_multiple_locator_edit,
+        ): self.plot_controller.update_ticks.emit(edits)
+        x_multiple_locator_edit.editingFinished.connect(tmp_slot)
+        y_multiple_locator_edit.editingFinished.connect(tmp_slot)
+
+        show_legend_checkbox = QCheckBox("Show legend")
+        show_legend_checkbox.setChecked(True)
+        show_legend_checkbox.stateChanged.connect(self.show_legend_checkbox_slot)
+        plot_window_layout.addWidget(show_legend_checkbox)
 
         # Create canvas backend
         self.mplwidget = MplWidget(
@@ -223,21 +237,13 @@ class SubwindowPlot(QMdiSubWindow):
             self.mplwidget.plot(X_data, Y_data, label=label, linewidth=1)
 
         self.mplwidget.connect_mplcursor()
-        
+
         if axhline_needed:
             self.mplwidget.axes.axhline(0.0, color="black")
         if axvline_needed:
             self.mplwidget.axes.axvline(0.0, color="black")
 
         self.plot_controller.touch_legend.emit()
-
-        # Connect tick locator signals and slots
-        tmp_slot = lambda edits=(
-            x_multiple_locator_edit,
-            y_multiple_locator_edit,
-        ): self.plot_controller.update_ticks.emit(edits)
-        x_multiple_locator_edit.editingFinished.connect(tmp_slot)
-        y_multiple_locator_edit.editingFinished.connect(tmp_slot)
 
         table = QTableWidget()
         table.setColumnCount(3)
@@ -288,4 +294,14 @@ class SubwindowPlot(QMdiSubWindow):
             )
 
         self.show()
+        return
+
+    def show_legend_checkbox_slot(self, state) -> None:
+        print(state)
+        if Qt.CheckState(state) == Qt.Checked:
+            self.plot_controller.show_legend.emit()
+            print("SHOW")
+        else:
+            self.plot_controller.hide_legend.emit()
+            print("HIDE")
         return

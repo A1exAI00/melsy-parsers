@@ -1,5 +1,4 @@
 from typing import List, Tuple
-from time import time
 import re
 from statistics import mean
 
@@ -39,6 +38,7 @@ class MplWidget(QWidget):
 
         self.dpi = 100
         self.figsize = (5, 4)
+        self.show_legend = True
 
         # Data plots
         self.lines_visibility: List[bool] = []
@@ -52,8 +52,6 @@ class MplWidget(QWidget):
         # Approx lines
         self.approx_lines: List[LinearApproxLine] = []
         self.approx_lines_visibility: List[bool] = []
-        self.approx_lines_last_update_time = time()
-        self.approx_lines_update_cooldown = 0.0
 
         self.setup_ui()
         self.connect_controller()
@@ -70,14 +68,13 @@ class MplWidget(QWidget):
         self.axes.set_ylabel(self.ylabel)
         self.axes.xaxis.set_minor_locator(AutoMinorLocator(10))
         self.axes.yaxis.set_minor_locator(AutoMinorLocator(10))
-        self.axes.legend()
 
         # Set up layout
         layout = QVBoxLayout()
         layout.addWidget(self.canvas)
         self.setLayout(layout)
         return
-    
+
     def connect_mplcursor(self):
         cursor = mplcursors.cursor(self.axes.lines)
         cursor.connect("add", self.mplcursor_connect_function)
@@ -97,7 +94,10 @@ class MplWidget(QWidget):
             self.approx_line_visibility_toggled_slot
         )
         self.controller.touch_plot.connect(self.touch_plot_slot)
+        self.controller.touch_legend.connect(self.touch_legend_slot)
         self.controller.update_ticks.connect(self.update_tick_slot)
+        self.controller.show_legend.connect(self.show_legend_slot)
+        self.controller.hide_legend.connect(self.hide_legend_slot)
 
         return
 
@@ -111,19 +111,12 @@ class MplWidget(QWidget):
         self.labels.append(label)
         self.lines_visibility.append(True)
 
-        index = len(self.draggable_lines)
-
-        # Add and hide a pair of draggable lines
         self.draggable_lines.append(None)
         self.draggable_lines_visibibity.append(False)
-        # self.add_draggable_lines()
-        # self.hide_draggable_lines(index)
 
-        # Add and hide approximation line
         self.approx_lines.append(None)
         self.approx_lines_visibility.append(False)
-        # self.add_approx_line()
-        # self.hide_approx_line(index)
+        self.controller.touch_legend.emit()
         return
 
     def hide_plot(self, index: int) -> None:
@@ -144,8 +137,8 @@ class MplWidget(QWidget):
             self.hide_plot(index)
         else:
             self.show_plot(index)
-        self.axes.legend()
         self.controller.touch_plot.emit()
+        self.controller.touch_legend.emit()
         return
 
     ############################################################################
@@ -193,7 +186,7 @@ class MplWidget(QWidget):
             self.delete_draggable_lines(index)
         else:
             self.show_draggable_lines(index)
-            # self.controller.draggable_changed_position.emit(index)
+        self.controller.touch_legend.emit()
         self.controller.touch_plot.emit()
         return
 
@@ -209,7 +202,7 @@ class MplWidget(QWidget):
         except:
             slope = 0.0
             ylim = self.axes.get_ylim()
-            intersept = (ylim[0] + ylim[1])/2
+            intersept = (ylim[0] + ylim[1]) / 2
         line = LinearApproxLine(
             self.axes,
             intercept_point=(0.0, intersept),
@@ -217,8 +210,9 @@ class MplWidget(QWidget):
             color=color,
             linewidth=1,
         )
-        line.connect_controller(self.controller)
         self.approx_lines[index] = line
+        line.connect_controller(self.controller)
+        self.approx_line_update_position_slot(index)
         return
 
     def delete_approx_line(self, index: int) -> None:
@@ -235,6 +229,7 @@ class MplWidget(QWidget):
         else:
             self.add_approx_line(index)
             # TODO find best linear section
+        self.controller.touch_legend.emit()
         self.controller.touch_plot.emit()
         return
 
@@ -242,14 +237,6 @@ class MplWidget(QWidget):
         # Do nothing if approx line is hidden
         if not self.approx_lines_visibility[index]:
             return
-
-        # Save compute by waiting for cooldown
-        # if (
-        #     time() - self.approx_lines_last_update_time
-        #     < self.approx_lines_update_cooldown
-        # ):
-        #     return
-        # self.approx_lines_last_update_time = time()
 
         # Get data from the plot
         x_data_all = self.lines[index][0].get_xdata(orig=True)
@@ -328,12 +315,17 @@ class MplWidget(QWidget):
             case _:
                 raise Exception(f"{self.role}: unknown role")
         line.set_label("\n".join(texts))
-        self.axes.legend()
+        self.controller.touch_legend.emit()
+        self.controller.touch_plot.emit()
         return
 
     def touch_plot_slot(self) -> None:
-        self.axes.legend()
         self.canvas.draw()
+        return
+
+    def touch_legend_slot(self) -> None:
+        if self.show_legend:
+            self.axes.legend()
         return
 
     def update_tick_slot(self, edits):
@@ -349,6 +341,7 @@ class MplWidget(QWidget):
                 axis.set_major_locator(AutoLocator())
 
         # Force redraw plot
+        self.controller.touch_legend.emit()
         self.controller.touch_plot.emit()
         return
 
@@ -370,4 +363,17 @@ class MplWidget(QWidget):
                 ]
             )
         )
+        return
+
+    def show_legend_slot(self) -> None:
+        self.show_legend = True
+        self.axes.legend().set_visible(True)
+        self.controller.touch_legend.emit()
+        self.controller.touch_plot.emit()
+        return
+    
+    def hide_legend_slot(self) -> None:
+        self.show_legend = False
+        self.axes.legend().set_visible(False)
+        self.controller.touch_plot.emit()
         return
