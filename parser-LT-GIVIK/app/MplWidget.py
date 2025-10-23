@@ -282,8 +282,8 @@ class MplWidget(QWidget):
             raise Exception("Plot is not visible")
 
         # Get data from the plot
-        x_data_all = sorted(self.lines[index][0].get_xdata(orig=True))
-        y_data_all = sorted(self.lines[index][0].get_ydata(orig=True))
+        x_data_all = self.lines[index][0].get_xdata(orig=True)
+        y_data_all = self.lines[index][0].get_ydata(orig=True)
         draggable_line1, draggable_line2 = self.draggable_lines[index]
         x1, x2 = draggable_line1.x, draggable_line2.x
 
