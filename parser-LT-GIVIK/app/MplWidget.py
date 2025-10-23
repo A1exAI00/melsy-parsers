@@ -72,14 +72,15 @@ class MplWidget(QWidget):
         self.axes.yaxis.set_minor_locator(AutoMinorLocator(10))
         self.axes.legend()
 
-        # Create cursor for plot
-        cursor = mplcursors.cursor(self.axes.lines)
-        cursor.connect("add", self.mplcursor_connect_function)
-
         # Set up layout
         layout = QVBoxLayout()
         layout.addWidget(self.canvas)
         self.setLayout(layout)
+        return
+    
+    def connect_mplcursor(self):
+        cursor = mplcursors.cursor(self.axes.lines)
+        cursor.connect("add", self.mplcursor_connect_function)
         return
 
     def connect_controller(self):

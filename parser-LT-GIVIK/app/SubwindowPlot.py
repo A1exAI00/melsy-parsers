@@ -221,6 +221,8 @@ class SubwindowPlot(QMdiSubWindow):
             X_data = X_arrays[i]
             Y_data = Y_arrays[i]
             self.mplwidget.plot(X_data, Y_data, label=label, linewidth=1)
+
+        self.mplwidget.connect_mplcursor()
         
         if axhline_needed:
             self.mplwidget.axes.axhline(0.0, color="black")
