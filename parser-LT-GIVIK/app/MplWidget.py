@@ -1,8 +1,7 @@
 from typing import List, Tuple, Callable
 import re
-from statistics import mean
 
-# import numpy as np
+import numpy as np
 from PySide6.QtWidgets import QVBoxLayout, QWidget, QLineEdit
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
@@ -13,7 +12,6 @@ from matplotlib.ticker import (
     AutoLocator,
 )
 import mplcursors
-import numpy as np
 
 from backend.misc import create_linear_approximation
 from app.DraggableLine import DraggableVerticalLine

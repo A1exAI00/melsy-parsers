@@ -1,4 +1,4 @@
-from typing import List, Dict
+from typing import List
 from os.path import join, basename, splitext
 from glob import iglob
 import re
