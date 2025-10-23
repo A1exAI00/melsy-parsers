@@ -65,8 +65,6 @@ class MplWidget(QWidget):
         self.axes = self.fig.add_subplot(111)
 
         self.axes.grid(True, linestyle="--", alpha=0.7)
-        self.axes.axhline(color="black")
-        self.axes.axvline(color="black")
         self.axes.set_xlabel(self.xlabel)
         self.axes.set_ylabel(self.ylabel)
         self.axes.xaxis.set_minor_locator(AutoMinorLocator(10))

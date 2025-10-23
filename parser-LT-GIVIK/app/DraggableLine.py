@@ -86,7 +86,8 @@ class DraggableVerticalLine:
 
         # Update text position
         ylim = self.ax.get_ylim()
-        self.text.set_position((x, 0.05 * (ylim[1] - ylim[0])))
+        print(ylim)
+        self.text.set_position((x, ylim[0] + 0.05 * (ylim[1] - ylim[0])))
         self.text.set_text(f"x={x:.2f}")
 
         self.canvas.draw()

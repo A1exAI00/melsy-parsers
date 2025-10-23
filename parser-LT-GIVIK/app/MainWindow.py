@@ -11,10 +11,12 @@ from PySide6.QtWidgets import (
 from PySide6.QtGui import QAction
 
 from app.MainController import MainController
-from app.LT.SubwindowSetup import SubwindowSetup as LTsubwindowSetup
-from app.LT.SubwindowResult import SubwindowResult as LTsubwindowResult
 from app.LIV.SubwindowSetup import SubwindowSetup as LIVsubwindowSetup
 from app.LIV.SubwindowResult import SubwindowResult as LIVsubwindowResult
+from app.LT.SubwindowSetup import SubwindowSetup as LTsubwindowSetup
+from app.LT.SubwindowResult import SubwindowResult as LTsubwindowResult
+from app.PULSE.SubwindowSetup import SubwindowSetup as PULSEsubwindowSetup
+from app.PULSE.SubwindowResult import SubwindowResult as PULSEsubwindowResult
 
 
 class MainWindow(QMainWindow):
@@ -50,6 +52,7 @@ class MainWindow(QMainWindow):
 
         self.add_LIV_tab()
         self.add_LT_tab()
+        self.add_PULSE_tab()
         return
 
     def create_menubar(self):
@@ -63,6 +66,10 @@ class MainWindow(QMainWindow):
         open_LT_action = QAction("Open LT tab", self)
         open_LT_action.triggered.connect(self.add_LT_tab)
         file_menu.addAction(open_LT_action)
+
+        open_PULSE_action = QAction("Open PULSE tab", self)
+        open_PULSE_action.triggered.connect(self.add_PULSE_tab)
+        file_menu.addAction(open_PULSE_action)
         return
 
     def add_LIV_tab(self) -> None:
@@ -86,6 +93,17 @@ class MainWindow(QMainWindow):
         self.tab_widget.addTab(tab_widget, "LT")
         self.subwindow_setup = LTsubwindowSetup(self.controller, mdi)
         return
+    
+    def add_PULSE_tab(self) -> None:
+        mdi = QMdiArea()
+
+        tab_widget = QWidget()
+        tab_layout = QVBoxLayout(tab_widget)
+        tab_layout.addWidget(mdi)
+
+        self.tab_widget.addTab(tab_widget, "PULSE")
+        self.subwindow_setup = PULSEsubwindowSetup(self.controller, mdi)
+        return
 
     def connect_controller(self) -> None:
         self.controller.after_LIV_start_pressed_signal.connect(
@@ -93,6 +111,9 @@ class MainWindow(QMainWindow):
         )
         self.controller.after_LT_start_pressed_signal.connect(
             self.after_LT_start_pressed_slot
+        )
+        self.controller.after_PULSE_start_pressed_signal.connect(
+            self.after_PULSE_start_pressed_slot
         )
         self.controller.start_cooldown_release.connect(self.start_cooldown_release_slot)
         return
@@ -107,6 +128,12 @@ class MainWindow(QMainWindow):
         if not self.start_cooldown_active:
             self.start_cooldown_active = True
             self.create_and_append_LT_result_window(_dict)
+        return
+    
+    def after_PULSE_start_pressed_slot(self, _dict) -> None:
+        if not self.start_cooldown_active:
+            self.start_cooldown_active = True
+            self.create_and_append_PULSE_result_window(_dict)
         return
 
     def start_cooldown_release_slot(self) -> None:
@@ -129,5 +156,15 @@ class MainWindow(QMainWindow):
             mdi_area = current_widget.findChild(QMdiArea)
             if mdi_area:
                 new_window = LTsubwindowResult(self.controller, mdi_area, index, _dict)
+                self.result_windows.append(new_window)
+        return
+    
+    def create_and_append_PULSE_result_window(self, _dict) -> None:
+        index = len(self.result_windows)
+        current_widget = self.tab_widget.currentWidget()
+        if current_widget:
+            mdi_area = current_widget.findChild(QMdiArea)
+            if mdi_area:
+                new_window = PULSEsubwindowResult(self.controller, mdi_area, index, _dict)
                 self.result_windows.append(new_window)
         return

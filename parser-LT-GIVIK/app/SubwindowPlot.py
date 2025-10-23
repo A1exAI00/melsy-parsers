@@ -60,6 +60,7 @@ class SubwindowPlot(QMdiSubWindow):
                             Y_arrays.append(data.LIV[key])
                 sub_x_position, sub_y_position = 1003, 3
                 sub_w, sub_h = 500, 800
+                axhline_needed, axvline_needed = True, True
             case "LIVvoltage":
                 this_title = "LIV vontage(set current) plot window"
                 X_axis_label = "Set, A"
@@ -76,6 +77,7 @@ class SubwindowPlot(QMdiSubWindow):
                             Y_arrays.append(data.LIV[key])
                 sub_x_position, sub_y_position = 1003, 3
                 sub_w, sub_h = 500, 800
+                axhline_needed, axvline_needed = True, True
             case "LIVspectrummean":
                 this_title = "LIV WLmean(set current) plot window"
                 X_axis_label = "Set, A"
@@ -93,6 +95,7 @@ class SubwindowPlot(QMdiSubWindow):
                             Y_arrays.append(data.LIV[key])
                 sub_x_position, sub_y_position = 1003, 3
                 sub_w, sub_h = 500, 800
+                axhline_needed, axvline_needed = False, True
             case "LTpower":
                 this_title = "LT power(time) plot window"
                 X_axis_label = "Reletive time, h"
@@ -102,6 +105,7 @@ class SubwindowPlot(QMdiSubWindow):
                 Y_arrays = [data.LT["Power (avg), W"] for data in self.datas]
                 sub_x_position, sub_y_position = 1003, 3
                 sub_w, sub_h = 500, 800
+                axhline_needed, axvline_needed = True, True
             case "LTvoltage":
                 this_title = "LT voltage(time) plot window"
                 X_axis_label = "Reletive time, h"
@@ -114,6 +118,7 @@ class SubwindowPlot(QMdiSubWindow):
                 Y_arrays = [data.LT["Power (avg), W"] for data in datas]
                 sub_x_position, sub_y_position = 1103, 3
                 sub_w, sub_h = 500, 800
+                axhline_needed, axvline_needed = True, True
             case "LTtemperature":
                 this_title = "LT temperature(time) plot window"
                 X_axis_label = "Reletive time, h"
@@ -126,6 +131,56 @@ class SubwindowPlot(QMdiSubWindow):
                 Y_arrays = [data.LT["Power (avg), W"] for data in datas]
                 sub_x_position, sub_y_position = 1203, 3
                 sub_w, sub_h = 500, 800
+                axhline_needed, axvline_needed = True, True
+            case "PULSEpower":
+                this_title = "PULSE power(set current) plot window"
+                X_axis_label = "Current, A"
+                Y_axis_label = "Power, W"
+                datas: List[LTdata] = list(
+                    filter(lambda each: "LIV" in each.mode, self.datas)
+                )
+                labels = [data.other_data["Name"] for data in datas]
+                X_arrays = [data.LIV["Current, A"] for data in datas]
+                Y_arrays = [data.LIV["Power, W"] for data in datas]
+                sub_x_position, sub_y_position = 1003, 3
+                sub_w, sub_h = 500, 800
+                axhline_needed, axvline_needed = True, True
+            case "PULSEvoltage":
+                this_title = "PULSE voltage(set current) plot window"
+                X_axis_label = "Current, A"
+                Y_axis_label = "Voltage, V"
+                datas: List[LTdata] = list(
+                    filter(lambda each: "LIV" in each.mode, self.datas)
+                )
+                labels = [data.other_data["Name"] for data in datas]
+                X_arrays = [data.LIV["Current, A"] for data in datas]
+                Y_arrays = [data.LIV["Voltage, V"] for data in datas]
+                sub_x_position, sub_y_position = 1203, 3
+                sub_w, sub_h = 500, 800
+                axhline_needed, axvline_needed = True, True
+            case "PULSEintensity":
+                this_title = "PULSE intensity(WL) plot window"
+                X_axis_label = "Wavelength, nm"
+                Y_axis_label = "Intensity, ??"
+                datas: List[LTdata] = list(
+                    filter(lambda each: "Spectrum" in each.mode, self.datas)
+                )
+                labels = []
+                X_arrays = []
+                Y_arrays = []
+                for data in datas:
+                    keys = data.LIV.keys()
+                    this_name = data.other_data["Name"]
+                    for key in keys:
+                        if "Intensity" in key:
+                            labels.append(this_name + str(key)[len("Intensity") :])
+                            X_arrays.append(data.LIV["Wavelength, nm"])
+                            Y_arrays.append(data.LIV[key])
+                sub_x_position, sub_y_position = 1203, 3
+                sub_w, sub_h = 500, 800
+                axhline_needed, axvline_needed = True, True
+            case _:
+                raise Exception("Unknown role of plot window")
 
         # Add new subwindow to Mdi Area
         self.setWindowTitle(this_title)
