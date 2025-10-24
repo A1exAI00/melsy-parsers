@@ -99,6 +99,30 @@ class SubwindowPlot(QMdiSubWindow):
                 sub_x_position, sub_y_position = 1003, 3
                 sub_w, sub_h = 500, 800
                 axhline_needed, axvline_needed = False, True
+            case "LIVintensity":
+                this_title = "LIV intensity(WL) plot window"
+                X_axis_label = "Wavelength, nm"
+                Y_axis_label = "Intensity, ??"
+                datas: List[LTdata] = list(
+                    filter(
+                        lambda each: isinstance(each, LIVdata),
+                        self.datas,
+                    )
+                )
+                labels = []
+                X_arrays = []
+                Y_arrays = []
+                for data in datas:
+                    keys = data.LIV.keys()
+                    this_name = data.other_data["Name"]
+                    for key in keys:
+                        if "Intensity" in key:
+                            labels.append(str(key)[len("Intensity") :])
+                            X_arrays.append(data.LIV["Wavelength1, nm"])
+                            Y_arrays.append(data.LIV[key])
+                sub_x_position, sub_y_position = 1203, 3
+                sub_w, sub_h = 500, 800
+                axhline_needed, axvline_needed = True, False
             case "LTpower":
                 this_title = "LT power(time) plot window"
                 X_axis_label = "Reletive time, h"
@@ -346,5 +370,7 @@ class SubwindowPlot(QMdiSubWindow):
         return
 
     def put_legend_outside_slot(self, state) -> None:
-        self.plot_controller.legend_position_changed.emit(Qt.CheckState(state) == Qt.Checked)
+        self.plot_controller.legend_position_changed.emit(
+            Qt.CheckState(state) == Qt.Checked
+        )
         return

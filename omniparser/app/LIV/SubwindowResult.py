@@ -73,6 +73,12 @@ class SubwindowResult(QMdiSubWindow):
         )
         box.addWidget(show_plot_button)
 
+        show_plot_button = QPushButton("Open intensity(WL) plot")
+        show_plot_button.clicked.connect(
+            lambda: self.create_intensity_plot_window_slot(datas)
+        )
+        box.addWidget(show_plot_button)
+
         table_window_layout.addLayout(box)
 
         N_cols = []
@@ -166,6 +172,14 @@ class SubwindowResult(QMdiSubWindow):
         )
         self.voltage_plot_subwindows.append(new_window)
         return
+    
+    def create_intensity_plot_window_slot(self, datas: List[LIVdata]) -> None:
+        new_window = SubwindowPlot(
+            self.sub_controller, self.mdi, role="LIVintensity", datas=datas
+        )
+        self.voltage_plot_subwindows.append(new_window)
+        return
+    
     def closeEvent(self, closeEvent):
         all_windows = (
             self.power_plot_subwindows

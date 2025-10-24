@@ -44,6 +44,7 @@ class LIVparser:
         data = LIVdata(filepath)
         self.get_lines(data)
         self.parse_LIV(data)
+        self.parse_spectrim_data(data)
         self.parse_other_data(data)
         return data
 
@@ -88,6 +89,83 @@ class LIVparser:
                         if DAT:
                             name += f" (DAT={DAT}ms)"
                     data.add_LIV(name, values)
+        return
+
+    def parse_spectrim_data(self, data: LIVdata) -> None:
+        section_marker = "### Spectrum Data ###"
+        section_is = []
+        for i, line in enumerate(data.lines):
+            if section_marker in line:
+                section_is.append(i)
+
+        if not section_is:
+            return
+        i = section_is[0]
+
+        DAT = []
+        intensity_all = {}
+
+        # Go to first DAT and save
+        i += 1
+        DAT.append(re.findall(NUMBER_PATTERN, data.lines[i])[0])
+
+        # Go to currents
+        i += 3
+        current_all = re.findall(NUMBER_PATTERN, data.lines[i])
+        for current in current_all:
+            intensity_all[f"Intensity (current={current}A, DAT={DAT[0]} ms)"] = []
+
+        # Find start of data
+        while "--------" not in data.lines[i]:
+            i += 1
+        i += 1
+
+        wl_all_first: List[float] = []
+        while foundall := re.findall(NUMBER_PATTERN, data.lines[i]):
+            line = data.lines[i]
+            wl_all_first.append(float(foundall[0]))
+            for j, current in enumerate(current_all):
+                intensity_all[
+                    f"Intensity (current={current}A, DAT={DAT[0]} ms)"
+                ].append(float(foundall[j + 1]))
+            i += 1
+
+        data.add_LIV("Current, A", current_all)
+        data.add_LIV("Wavelength1, nm", wl_all_first)
+        data.LIV.update(intensity_all)
+
+        #####################################################
+
+        # Find second DAT and save
+        try:
+            while "DAT, ms" not in data.lines[i]:
+                i += 1
+            DAT.append(re.findall(NUMBER_PATTERN, data.lines[i])[0])
+        except: return
+
+        # Go to currents
+        i += 3
+        for current in current_all:
+            intensity_all[f"Intensity (current={current}A, DAT={DAT[1]} ms)"] = []
+
+        # Find start of data
+        while "--------" not in data.lines[i]:
+            i += 1
+        i += 1
+
+        wl_all_second: List[float] = []
+        while foundall := re.findall(NUMBER_PATTERN, data.lines[i]):
+            line = data.lines[i]
+            wl_all_second.append(float(foundall[0]))
+            for j, current in enumerate(current_all):
+                intensity_all[
+                    f"Intensity (current={current}A, DAT={DAT[1]} ms)"
+                ].append(float(foundall[j + 1]))
+            i += 1
+
+        data.add_LIV("Current, A", current_all)
+        data.add_LIV("Wavelength2, nm", wl_all_second)
+        data.LIV.update(intensity_all)
         return
 
     def parse_LIV_row(self, string, varname_pattern):

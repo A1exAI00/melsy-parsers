@@ -348,6 +348,8 @@ class MplWidget(QWidget):
                 annotation_texts.append(f"V₀={intersept:.3E}")
             case "LIVspectrummean":
                 annotation_texts.append(f"W₀={intersept:.3E}")
+            case "PULSEintensity":
+                pass
             case "LTpower":
                 annotation_texts.append(f"k={slope:.3E}")
                 annotation_texts.append(f"Δ={(last-first):.3f}")
@@ -398,7 +400,7 @@ class MplWidget(QWidget):
             return
 
         if self.legend_position_outside:
-            
+
             self.legend = self.axes.legend(
                 loc="center left",
                 bbox_to_anchor=(1.0, 0.5),
@@ -453,7 +455,7 @@ class MplWidget(QWidget):
         self.controller.touch_plot.emit()
         return
 
-    def mplcursor_connect_function(self, selection):
+    def mplcursor_connect_function(self, selection: mplcursors.Selection):
         label = selection.artist.get_label()
         if re.findall(r"_child\d+", label):
             selection.annotation.set_visible(False)
@@ -470,6 +472,50 @@ class MplWidget(QWidget):
                         f"{self.xlabel} = {selection.target[0]:.3f}",
                         f"{self.ylabel} = {selection.target[1]:.3f}",
                         f"ΔT, °C = {(selection.target[1]-self.cold_wavelength)/0.27:.3f}",
+                    ]
+                )
+            )
+            return
+
+        if self.role == "LIVintensity":
+            x_data = selection.artist.get_xdata(orig=True)
+            y_data = selection.artist.get_ydata(orig=True)
+            y_max = np.max(y_data)
+            y_half = y_max / 2
+
+            x11, x12, x21, x22 = [None]*4
+            y11, y12, y21, y22 = [None]*4
+            for i in range(len(x_data) - 1):
+                x11, x12 = x_data[i], x_data[i+1]
+                y11, y12 = y_data[i], y_data[i+1]
+                if (y11 - y_half) * (y12 - y_half) < 0:
+                    break
+            else:
+                raise Exception("Could not find first half point")
+            
+            for i in range(1, len(x_data) - 2):
+                x21, x22 = x_data[-i-1], x_data[-i]
+                y21, y22 = y_data[-i-1], y_data[-i]
+                if (y21 - y_half) * (y22 - y_half) < 0:
+                    break
+            else:
+                raise Exception("Could not find first half point")
+
+            k1 = (y12 - y11)/(x12 - x11)
+            b1 = y11 - k1*x11
+            x1 = (y_half-b1)/k1
+
+            k2 = (y22 - y21)/(x22 - x21)
+            b2 = y21 - k2*x21
+            x2 = (y_half-b2)/k2
+
+            selection.annotation.set_text(
+                "\n".join(
+                    [
+                        selection.artist.get_label(),
+                        f"{self.xlabel} = {selection.target[0]:.3f}",
+                        f"{self.ylabel} = {selection.target[1]:.3f}",
+                        f"Δw @ 1/2 max, nm = {abs(x2-x1):.3f}",
                     ]
                 )
             )
