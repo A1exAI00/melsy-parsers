@@ -214,11 +214,20 @@ class SubwindowPlot(QMdiSubWindow):
         x_multiple_locator_edit.editingFinished.connect(tmp_slot)
         y_multiple_locator_edit.editingFinished.connect(tmp_slot)
 
+        # Legend configuration
+        legend_config_box = QHBoxLayout()
+        plot_window_layout.addLayout(legend_config_box)
+
         show_legend_checkbox = QCheckBox("Show legend")
         show_legend_checkbox.setChecked(True)
         show_legend_checkbox.stateChanged.connect(self.show_legend_checkbox_slot)
-        plot_window_layout.addWidget(show_legend_checkbox)
+        legend_config_box.addWidget(show_legend_checkbox)
 
+        put_legend_outside_checkbox = QCheckBox("Put legend outside")
+        put_legend_outside_checkbox.stateChanged.connect(self.put_legend_outside_slot)
+        legend_config_box.addWidget(put_legend_outside_checkbox)
+
+        # Approximatiom mode configuration
         approx_mode_box = QHBoxLayout()
         approx_mode_label = QLabel("Approximation mode")
         approx_mode_combobox = QComboBox()
@@ -334,4 +343,8 @@ class SubwindowPlot(QMdiSubWindow):
 
     def approx_mode_changed_slot(self, index: int) -> None:
         self.plot_controller.approx_mode_changed.emit(index)
+        return
+
+    def put_legend_outside_slot(self, state) -> None:
+        self.plot_controller.legend_position_changed.emit(Qt.CheckState(state) == Qt.Checked)
         return

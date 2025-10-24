@@ -13,6 +13,7 @@ class PlotController(QObject):
     hide_legend = Signal()
     approx_mode_changed = Signal(int)
     cold_wavelength_changed = Signal(QLineEdit)
+    legend_position_changed = Signal(bool)
 
     def __init__(self):
         super().__init__()

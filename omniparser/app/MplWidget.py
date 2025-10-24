@@ -11,6 +11,7 @@ from matplotlib.ticker import (
     AutoMinorLocator,
     AutoLocator,
 )
+from matplotlib import pyplot as plt
 import mplcursors
 
 from backend.misc import create_linear_approximation
@@ -39,6 +40,7 @@ class MplWidget(QWidget):
         self.show_legend = True
         self.approx_function = self.approx_two_point
         # self.approx_function = self.approx_linear_regression
+        self.legend_position_outside = False
 
         # Data plots
         self.lines_visibility: List[bool] = []
@@ -59,9 +61,12 @@ class MplWidget(QWidget):
 
     def setup_ui(self) -> None:
         # Create matplotlib figure and canvas
-        self.fig = Figure(figsize=self.figsize, dpi=self.dpi)
+        # self.fig = Figure(figsize=self.figsize, dpi=self.dpi)
+        # self.canvas = FigureCanvas(self.fig)
+        # self.axes = self.fig.add_subplot(111)
+        self.fig, self.axes = plt.subplots(figsize=self.figsize, dpi=self.dpi)
         self.canvas = FigureCanvas(self.fig)
-        self.axes = self.fig.add_subplot(111)
+        self.initial_box = self.axes.get_position()
 
         self.axes.grid(True, linestyle="--", alpha=0.7)
         self.axes.set_xlabel(self.xlabel)
@@ -101,6 +106,9 @@ class MplWidget(QWidget):
         self.controller.approx_mode_changed.connect(self.approx_mode_changed_slot)
         self.controller.cold_wavelength_changed.connect(
             self.cold_wavelength_changed_slot
+        )
+        self.controller.legend_position_changed.connect(
+            self.legend_position_changed_slot
         )
 
         return
@@ -372,8 +380,60 @@ class MplWidget(QWidget):
         return
 
     def touch_legend_slot(self) -> None:
-        if self.show_legend:
-            self.axes.legend()
+        try:
+            if self.legend:
+                self.legend.remove()
+        except:
+            pass
+
+        if not self.show_legend:
+            self.axes.set_position(
+                [
+                    self.initial_box.x0,
+                    self.initial_box.y0,
+                    self.initial_box.width,
+                    self.initial_box.height,
+                ]
+            )
+            return
+
+        if self.legend_position_outside:
+            
+            self.legend = self.axes.legend(
+                loc="center left",
+                bbox_to_anchor=(1.0, 0.5),
+                frameon=True,
+                fancybox=True,
+                shadow=True,
+                fontsize=10,
+            )
+            legend_bbox = self.legend.get_window_extent()
+            legend_width_pixels = legend_bbox.width
+            fig_width = self.fig.get_figwidth() * self.dpi
+            legend_width_fig = legend_width_pixels / fig_width
+
+            self.axes.set_position(
+                [
+                    self.initial_box.x0,
+                    self.initial_box.y0,
+                    self.initial_box.width - legend_width_fig,
+                    self.initial_box.height,
+                ]
+            )
+
+        if not self.legend_position_outside:
+            self.axes.set_position(
+                [
+                    self.initial_box.x0,
+                    self.initial_box.y0,
+                    self.initial_box.width,
+                    self.initial_box.height,
+                ]
+            )
+            self.legend = self.axes.legend(
+                loc="best", frameon=True, fancybox=True, shadow=True, fontsize=10
+            )
+
         return
 
     def update_tick_slot(self, edits):
@@ -401,7 +461,7 @@ class MplWidget(QWidget):
         if re.findall(r"k=[+-]?\d*\.\d+E[+-]\d+", label):
             selection.annotation.set_visible(False)
             return
-        
+
         if self.role == "LIVspectrummean":
             selection.annotation.set_text(
                 "\n".join(
@@ -428,14 +488,19 @@ class MplWidget(QWidget):
 
     def show_legend_slot(self) -> None:
         self.show_legend = True
-        self.axes.legend().set_visible(True)
         self.controller.touch_legend.emit()
         self.controller.touch_plot.emit()
         return
 
     def hide_legend_slot(self) -> None:
         self.show_legend = False
-        self.axes.legend().set_visible(False)
+        self.controller.touch_legend.emit()
+        self.controller.touch_plot.emit()
+        return
+
+    def legend_position_changed_slot(self, is_outside) -> None:
+        self.legend_position_outside = is_outside
+        self.controller.touch_legend.emit()
         self.controller.touch_plot.emit()
         return
 
