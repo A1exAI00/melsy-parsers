@@ -13,6 +13,7 @@ from PySide6.QtWidgets import (
     QTableWidget,
     QComboBox,
     QFormLayout,
+    QSplitter,
 )
 from PySide6.QtCore import Qt
 
@@ -206,11 +207,16 @@ class SubwindowPlot(QMdiSubWindow):
         plot_window_layout = QHBoxLayout()
         plot_window_widget.setLayout(plot_window_layout)
 
+        splitter = QSplitter()
+        plot_window_layout.addWidget(splitter)
+
         panel = self.setup_control_panel()
-        plot_window_layout.addWidget(panel, stretch=1)
+        splitter.addWidget(panel)
+        panel.setMaximumWidth(400)
+        panel.setMinimumWidth(300)
 
         plot = self.setup_plot_widget()
-        plot_window_layout.addWidget(plot, stretch=3)
+        splitter.addWidget(plot)
 
         self.table.resizeColumnToContents(0)
         self.table.resizeColumnToContents(1)
