@@ -1,5 +1,5 @@
 from typing import List
-from os.path import join, basename
+from os.path import join, basename, splitext
 from glob import iglob
 import re
 
@@ -17,6 +17,7 @@ from PySide6.QtWidgets import (
     QFileDialog,
     QCheckBox,
     QLabel,
+    QFormLayout,
 )
 
 from backend.misc import get_3_parents_dirs
@@ -43,34 +44,40 @@ class SubwindowSetup(QMdiSubWindow):
         window_widget.setLayout(window_layout)
         self.setWidget(window_widget)
 
-        # Create combo box with work mode
+        form = QFormLayout()
+        window_layout.addLayout(form)
+
         self.work_mode_combo = QComboBox()
-        self.work_mode_combo.addItem("File mode")
-        self.work_mode_combo.addItem("Folder mode")
-        self.work_mode_combo.addItem("Recursive mode")
-        window_layout.addWidget(self.work_mode_combo)
+        self.work_mode_combo.setToolTip(
+            "Combo box to choose working mode. Working mode will define a behaviour of 'Edit path' button.\nFor more infornation open manual."
+        )
+        self.work_mode_combo.addItems(["File mode", "Folder mode", "Recursive mode"])
+        form.addRow("Working mode", self.work_mode_combo)
 
-        box = QHBoxLayout()
-        filename_filter_label = QLabel(text="Filename filter")
-        box.addWidget(filename_filter_label)
         self.filename_filter = QLineEdit("LIV|SPEC")
-        box.addWidget(self.filename_filter)
-        window_layout.addLayout(box)
+        self.filename_filter.setToolTip(
+            "Here you can enter a pattern (python regex) to filter files by their filenames.\nFilename here is a basename of a file without it's extention."
+        )
+        form.addRow("Filename filter", self.filename_filter)
 
-        # Create extention edit field
-        box = QHBoxLayout()
-        extention_label = QLabel(text="File extention filter")
-        box.addWidget(extention_label)
-        self.extention_edit = QLineEdit(".txt")
-        box.addWidget(self.extention_edit)
-        window_layout.addLayout(box)
+        self.extention_edit = QLineEdit("txt")
+        self.extention_edit.setToolTip(
+            "Here you can enter a pattern (python regex) to filter files by their extentions."
+        )
+        form.addRow("File extention filter", self.extention_edit)
 
         # Create "add source" and "clear" buttons
         box = QHBoxLayout()
         self.add_source_button = QPushButton("Add source")
+        self.add_source_button.setToolTip(
+            "This button will add an empty row at the end of setup table."
+        )
         self.add_source_button.clicked.connect(self.add_row_slot)
         box.addWidget(self.add_source_button)
         self.clear_table_button = QPushButton("Clear")
+        self.clear_table_button.setToolTip(
+            "This button will clear all input fields of setup table."
+        )
         self.clear_table_button.clicked.connect(self.clear_table_slot)
         box.addWidget(self.clear_table_button)
         window_layout.addLayout(box)
@@ -89,6 +96,9 @@ class SubwindowSetup(QMdiSubWindow):
         self.type_prod_overwrite_edit = QLineEdit()
         self.type_prod_overwrite_edit.setPlaceholderText("2525")
         type_prod_overwrite_button = QPushButton("Replace")
+        type_prod_overwrite_button.setToolTip(
+            "This button will replace all values in this column with a value placed in an input field to the left of this button.\n Note that gray text is an example (placeholder text), it is considered an empty input field."
+        )
         type_prod_overwrite_button.clicked.connect(self.type_prod_overwrite_slot)
         type_prod_overwrite_box.addWidget(self.type_prod_overwrite_edit)
         type_prod_overwrite_box.addWidget(type_prod_overwrite_button)
@@ -101,6 +111,9 @@ class SubwindowSetup(QMdiSubWindow):
         self.date_overwrite_edit = QLineEdit()
         self.date_overwrite_edit.setPlaceholderText("9999")
         date_overwrite_button = QPushButton("Replace")
+        date_overwrite_button.setToolTip(
+            "This button will replace all values in this column with a value placed in an input field to the left of this button.\n Note that gray text is an example (placeholder text), it is considered an empty input field."
+        )
         date_overwrite_button.clicked.connect(self.date_overwrite_slot)
         date_overwrite_box.addWidget(self.date_overwrite_edit)
         date_overwrite_box.addWidget(date_overwrite_button)
@@ -113,6 +126,9 @@ class SubwindowSetup(QMdiSubWindow):
         self.n_rad_overwrite_edit = QLineEdit()
         self.n_rad_overwrite_edit.setPlaceholderText("01")
         n_rad_overwrite_button = QPushButton("Replace")
+        n_rad_overwrite_button.setToolTip(
+            "This button will replace all values in this column with a value placed in an input field to the left of this button.\n Note that gray text is an example (placeholder text), it is considered an empty input field."
+        )
         n_rad_overwrite_button.clicked.connect(self.n_rad_overwrite_slot)
         n_rad_overwrite_box.addWidget(self.n_rad_overwrite_edit)
         n_rad_overwrite_box.addWidget(n_rad_overwrite_button)
@@ -126,11 +142,15 @@ class SubwindowSetup(QMdiSubWindow):
         self.table.setColumnWidth(0, 1000)  # Name column
 
         self.add_naming_checkbox = QCheckBox("Add naming")
+        self.add_naming_checkbox.setToolTip(
+            "If this checkbox is checked, naming from 'Type prod', 'Date' and '№ Rad' will appear in result table.\nIf not, naming will not appear in result table."
+        )
         self.add_naming_checkbox.setChecked(True)
         window_layout.addWidget(self.add_naming_checkbox)
 
         # Create "add source" button
         self.start_button = QPushButton("Start")
+        self.start_button.setToolTip("This button will start parsing process and open result subwindow after successful parsing.")
         self.start_button.clicked.connect(self.start_slot)
         window_layout.addWidget(self.start_button)
 
@@ -171,6 +191,7 @@ class SubwindowSetup(QMdiSubWindow):
         self.table.setRowCount(row_index + 1)
         self.table.setItem(row_index, 0, QTableWidgetItem())
         edit_path_button = QPushButton("Edit path")
+        edit_path_button.setToolTip("This button will open OS dialog window, where you will need to choose files or folder.\nSelected files will appear in this row's and subsequent rows' 'Path' fields.")
         edit_path_button.clicked.connect(lambda: self.edit_path_slot(row_index))
         self.table.setCellWidget(row_index, 1, edit_path_button)
         self.table.setItem(row_index, 2, QTableWidgetItem())
