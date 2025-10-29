@@ -197,8 +197,27 @@ class SubwindowSetup(QMdiSubWindow):
             return
         filepaths = sorted(filepaths)
 
-        # Parse filepaths and edit setup table
+        # Filter basename for name and extention
+        filepaths_filtered = []
         for i, filepath in enumerate(filepaths):
+            file_basename = basename(filepath)
+            pattern_for_basename = self.filename_filter.text()
+
+            if pattern_for_basename and not re.search(
+                pattern_for_basename, file_basename
+            ):
+                continue
+
+            pattern_for_extention = self.extention_edit.text()
+            extention = splitext(file_basename)[1]
+            if pattern_for_extention and not re.search(
+                pattern_for_extention, extention
+            ):
+                continue
+            filepaths_filtered.append(filepath)
+
+        # Parse filepaths and edit setup table
+        for i, filepath in enumerate(filepaths_filtered):
 
             # Current row to edit
             current_row = row_index + i
