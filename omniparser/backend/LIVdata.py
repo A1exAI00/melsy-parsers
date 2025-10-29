@@ -203,8 +203,8 @@ class LIVparser:
             value: str = self.match_line_with_pattern(data, pattern)
 
             if i == 0:  # "Duration, us"
-                value = str(round(float(value) / 1000, ndigits=2))
+                value = convert_to_float_or_nan(value) / 1000
                 data.add_other_data("Duration, ms", value)
             else:
-                data.add_other_data(other_data_names[i], value)
+                data.add_other_data(other_data_names[i], convert_to_float_or_nan(value))
         return

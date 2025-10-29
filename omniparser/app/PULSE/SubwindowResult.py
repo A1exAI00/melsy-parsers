@@ -1,5 +1,6 @@
 from typing import List, Dict
 from math import isnan
+import re
 
 from PySide6.QtWidgets import (
     QTableWidget,
@@ -27,9 +28,10 @@ class SubwindowResult(QMdiSubWindow):
         self.controller = controller
         self.sub_controller = SubController()
         self.mdi = mdi
-        self.index = index
-        self.datas = _dict["datas"]
-        self.add_naming = _dict["add_naming"]
+        self.index: int = index
+        self.datas: List[PULSEdata] = _dict["datas"]
+        self.add_naming: bool = _dict["add_naming"]
+        self.ndigits: int = _dict["ndigits"]
 
         self.power_plot_subwindows: List[SubwindowPlot] = []
         self.voltage_plot_subwindows: List[SubwindowPlot] = []
@@ -103,7 +105,12 @@ class SubwindowResult(QMdiSubWindow):
             for name, value in data.other_data.items():
                 if name == "Name":
                     continue
-                self.append_to_results_table((name, value))
+                if re.search("frequency", name.lower()):
+                    self.append_to_results_table((name, f"{value:.0f} Hz"))
+                if re.search("duration", name.lower()):
+                    self.append_to_results_table((name, f"{value:.{self.ndigits}f} ms"))
+                else:
+                    self.append_to_results_table((name, value))
 
             # Append LIV data
             for i, (name, values) in enumerate(data.LIV.items()):
@@ -154,7 +161,7 @@ class SubwindowResult(QMdiSubWindow):
                 if np.isnan(value) or isnan(value):
                     self.table.item(self.table.rowCount() - 1, i).setText("NaN")
                 else: 
-                    self.table.item(self.table.rowCount() - 1, i).setText(f"{value:.2f}")
+                    self.table.item(self.table.rowCount() - 1, i).setText(f"{value:.{self.ndigits}f}")
                 continue
             
             # String

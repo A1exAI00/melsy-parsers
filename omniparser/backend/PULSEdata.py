@@ -54,11 +54,11 @@ class PULSEparser:
             self.parse_spectrum(data)
             self.parse_intensity(data)
         return data
-    
+
     def get_mode(self, data: PULSEdata) -> None:
         data.mode = data.lines[0]
         return
-    
+
     def parse_LIV(self, data: PULSEdata) -> None:
         LIV_section_markers: List[str] = [
             "**************",
@@ -147,7 +147,7 @@ class PULSEparser:
         other_data_names: List[str] = ["Duration, us", "Frequency, Hz"]
         for i, pattern in enumerate(other_data_patterns):
             value: str = self.match_line_with_pattern(data, pattern)
-            data.add_other_data(other_data_names[i], value)
+            data.add_other_data(other_data_names[i], convert_to_float_or_nan(value))
         return
 
     def parse_intensity(self, data: PULSEdata) -> None:
@@ -157,21 +157,23 @@ class PULSEparser:
                 break
         else:
             return
-        
+
         current_all = re.findall(NUMBER_PATTERN, data.lines[line_i])
         intensity_all = {}
         for current in current_all:
             intensity_all[f"Intensity (current={current}A)"] = []
-        
+
         wl_all = []
-        for i in range(line_i+2, len(data.lines)):
+        for i in range(line_i + 2, len(data.lines)):
             line = data.lines[i]
             foundall = re.findall(NUMBER_PATTERN, line)
             if not foundall:
                 break
             wl_all.append(convert_to_float_or_nan(foundall[0]))
             for j, current in enumerate(current_all):
-                intensity_all[f"Intensity (current={current}A)"].append(convert_to_float_or_nan(foundall[j+1]))
+                intensity_all[f"Intensity (current={current}A)"].append(
+                    convert_to_float_or_nan(foundall[j + 1])
+                )
 
         data.add_LIV("Current, A", current_all)
         data.add_LIV("Wavelength, nm", wl_all)

@@ -214,5 +214,7 @@ class LTparser:
             for line in data.lines:
                 if re.findall(pattern, line):
                     value = re.findall(NUMBER_PATTERN, line)[0]
-                    data.add_other_data(other_data_names[pattern_i], value)
+                    data.add_other_data(
+                        other_data_names[pattern_i], convert_to_float_or_nan(value)
+                    )
         return

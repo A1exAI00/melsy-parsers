@@ -1,5 +1,6 @@
 from typing import List, Dict
 from math import isnan
+import re
 
 from PySide6.QtWidgets import (
     QTableWidget,
@@ -28,8 +29,9 @@ class SubwindowResult(QMdiSubWindow):
         self.sub_controller = SubController()
         self.mdi = mdi
         self.index = index
-        self.datas = _dict["datas"]
-        self.add_naming = _dict["add_naming"]
+        self.datas: List[LIVdata] = _dict["datas"]
+        self.add_naming: bool = _dict["add_naming"]
+        self.ndigits: int = _dict["ndigits"]
 
         self.power_plot_subwindows: List[SubwindowPlot] = []
         self.voltage_plot_subwindows: List[SubwindowPlot] = []
@@ -109,11 +111,21 @@ class SubwindowResult(QMdiSubWindow):
             for name, value in data.other_data.items():
                 if name == "Name":
                     continue
-                self.append_to_results_table((name, value))
+                if re.search("frequency", name.lower()):
+                    self.append_to_results_table((name, f"{value:.0f} Hz"))
+                if re.search("duration", name.lower()):
+                    self.append_to_results_table((name, f"{value:.{self.ndigits}f} ms"))
+                else:
+                    self.append_to_results_table((name, value))
 
             # Append LIV data
             for i, (name, values) in enumerate(data.LIV.items()):
-                self.append_to_results_table([name,] + values)
+                self.append_to_results_table(
+                    [
+                        name,
+                    ]
+                    + values
+                )
 
             # Append empty row spacer
             if data_i != len(datas) - 1:
@@ -150,14 +162,16 @@ class SubwindowResult(QMdiSubWindow):
                 self.table.item(self.table.rowCount() - 1, i).setText("")
                 continue
 
-            # Float 
+            # Float
             if isinstance(value, float):
                 if np.isnan(value) or isnan(value):
                     self.table.item(self.table.rowCount() - 1, i).setText("NaN")
-                else: 
-                    self.table.item(self.table.rowCount() - 1, i).setText(f"{value:.2f}")
+                else:
+                    self.table.item(self.table.rowCount() - 1, i).setText(
+                        f"{value:.{self.ndigits}f}"
+                    )
                 continue
-            
+
             # String
             if isinstance(value, str):
                 if "nan" == value.lower().strip():
@@ -165,7 +179,7 @@ class SubwindowResult(QMdiSubWindow):
                 else:
                     self.table.item(self.table.rowCount() - 1, i).setText(value)
                 continue
-            
+
             print("Err")
         return
 
@@ -182,21 +196,21 @@ class SubwindowResult(QMdiSubWindow):
         )
         self.voltage_plot_subwindows.append(new_window)
         return
-    
+
     def create_spectrum_mean_plot_window_slot(self, datas: List[LIVdata]) -> None:
         new_window = SubwindowPlot(
             self.sub_controller, self.mdi, role="LIVspectrummean", datas=datas
         )
         self.voltage_plot_subwindows.append(new_window)
         return
-    
+
     def create_intensity_plot_window_slot(self, datas: List[LIVdata]) -> None:
         new_window = SubwindowPlot(
             self.sub_controller, self.mdi, role="LIVintensity", datas=datas
         )
         self.voltage_plot_subwindows.append(new_window)
         return
-    
+
     def closeEvent(self, closeEvent):
         all_windows = (
             self.power_plot_subwindows

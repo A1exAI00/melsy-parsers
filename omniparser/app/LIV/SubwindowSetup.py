@@ -18,6 +18,7 @@ from PySide6.QtWidgets import (
     QCheckBox,
     QLabel,
     QFormLayout,
+    QSpinBox,
 )
 
 from backend.misc import get_3_parents_dirs
@@ -148,9 +149,18 @@ class SubwindowSetup(QMdiSubWindow):
         self.add_naming_checkbox.setChecked(True)
         window_layout.addWidget(self.add_naming_checkbox)
 
-        # Create "add source" button
+        form2 = QFormLayout()
+        window_layout.addLayout(form2)
+        self.ndigits_spinbox = QSpinBox()
+        self.ndigits_spinbox.setMaximum(10)
+        self.ndigits_spinbox.setMinimum(0)
+        self.ndigits_spinbox.setValue(2)
+        form2.addRow("# of digits after point", self.ndigits_spinbox)
+
         self.start_button = QPushButton("Start")
-        self.start_button.setToolTip("This button will start parsing process and open result subwindow after successful parsing.")
+        self.start_button.setToolTip(
+            "This button will start parsing process and open result subwindow after successful parsing."
+        )
         self.start_button.clicked.connect(self.start_slot)
         window_layout.addWidget(self.start_button)
 
@@ -191,7 +201,9 @@ class SubwindowSetup(QMdiSubWindow):
         self.table.setRowCount(row_index + 1)
         self.table.setItem(row_index, 0, QTableWidgetItem())
         edit_path_button = QPushButton("Edit path")
-        edit_path_button.setToolTip("This button will open OS dialog window, where you will need to choose files or folder.\nSelected files will appear in this row's and subsequent rows' 'Path' fields.")
+        edit_path_button.setToolTip(
+            "This button will open OS dialog window, where you will need to choose files or folder.\nSelected files will appear in this row's and subsequent rows' 'Path' fields."
+        )
         edit_path_button.clicked.connect(lambda: self.edit_path_slot(row_index))
         self.table.setCellWidget(row_index, 1, edit_path_button)
         self.table.setItem(row_index, 2, QTableWidgetItem())
@@ -324,6 +336,10 @@ class SubwindowSetup(QMdiSubWindow):
 
     def start_slot(self) -> None:
         datas = self.parse()
-        _dict = {"datas": datas, "add_naming": self.add_naming_checkbox.isChecked()}
+        _dict = {
+            "datas": datas,
+            "add_naming": self.add_naming_checkbox.isChecked(),
+            "ndigits": self.ndigits_spinbox.value(),
+        }
         self.controller.after_LIV_start_pressed_signal.emit(_dict)
         return
