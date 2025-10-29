@@ -1,4 +1,5 @@
 from typing import List, Dict
+from math import isnan
 
 from PySide6.QtWidgets import (
     QTableWidget,
@@ -11,6 +12,7 @@ from PySide6.QtWidgets import (
     QPushButton,
 )
 import clipboard as clip
+import numpy as np
 
 from backend.LIVdata import LIVdata
 from app.MainController import MainController
@@ -139,17 +141,32 @@ class SubwindowResult(QMdiSubWindow):
         clip.copy("\n".join(tmp))
         return
 
-    def append_to_results_table(self, array: List[str]) -> None:
+    def append_to_results_table(self, array: List) -> None:
         self.add_row_to_results_table()
         for i, value in enumerate(array):
-            if isinstance(value, str):
-                if value is None:
-                    value = ""
-                elif "nan" in value.lower():
-                    value = "NaN"
-                self.table.item(self.table.rowCount() - 1, i).setText(value)
+
+            # None
+            if value is None:
+                self.table.item(self.table.rowCount() - 1, i).setText("")
+                continue
+
+            # Float 
             if isinstance(value, float):
-                self.table.item(self.table.rowCount() - 1, i).setText(f"{value:.5f}")
+                if np.isnan(value) or isnan(value):
+                    self.table.item(self.table.rowCount() - 1, i).setText("NaN")
+                else: 
+                    self.table.item(self.table.rowCount() - 1, i).setText(f"{value:.2f}")
+                continue
+            
+            # String
+            if isinstance(value, str):
+                if "nan" == value.lower().strip():
+                    self.table.item(self.table.rowCount() - 1, i).setText("NaN")
+                else:
+                    self.table.item(self.table.rowCount() - 1, i).setText(value)
+                continue
+            
+            print("Err")
         return
 
     def create_power_plot_window_slot(self, datas: List[LIVdata]) -> None:
