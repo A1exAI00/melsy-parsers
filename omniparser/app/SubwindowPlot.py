@@ -12,11 +12,13 @@ from PySide6.QtWidgets import (
     QGridLayout,
     QTableWidget,
     QComboBox,
+    QFormLayout,
 )
 from PySide6.QtCore import Qt
 
 from backend.LTdata import LTdata
 from backend.LIVdata import LIVdata
+from backend.PULSEdata import PULSEdata
 from app.SubController import SubController
 from app.PlotController import PlotController
 from app.ModifiedToolbar import ModifiedToolbar
@@ -29,7 +31,7 @@ class SubwindowPlot(QMdiSubWindow):
         controller: "SubController",
         mdi: QMdiArea,
         role: str,
-        datas: List[LIVdata | LTdata],
+        datas: List[LIVdata | LTdata | PULSEdata],
     ) -> None:
         self.controller = controller
         self.plot_controller = PlotController()
@@ -49,7 +51,7 @@ class SubwindowPlot(QMdiSubWindow):
 
     def connect_controller(self) -> None:
         return
-    
+
     def parse_role(self) -> None:
         role_to_title: Dict[str, str] = {}
         role_to_title["LIVpower"] = "LIV power(set current) plot window"
@@ -78,16 +80,16 @@ class SubwindowPlot(QMdiSubWindow):
         self.role_to_axes = role_to_axes
 
         role_to_window_pos: Dict[str, Tuple[float, float, float, float]] = {}
-        role_to_window_pos["LIVpower"] = (1003, 3, 500, 800)
-        role_to_window_pos["LIVvoltage"] = (1003, 3, 500, 800)
-        role_to_window_pos["LIVspectrummean"] = (1003, 3, 500, 800)
-        role_to_window_pos["LIVintensity"] = (1003, 3, 500, 800)
-        role_to_window_pos["LTpower"] = (1003, 3, 500, 800)
-        role_to_window_pos["LTvoltage"] = (1003, 3, 500, 800)
-        role_to_window_pos["LTtemperature"] = (1003, 3, 500, 800)
-        role_to_window_pos["PULSEpower"] = (1003, 3, 500, 800)
-        role_to_window_pos["PULSEvoltage"] = (1003, 3, 500, 800)
-        role_to_window_pos["PULSEintensity"] = (1003, 3, 500, 800)
+        role_to_window_pos["LIVpower"] = (803, 3, 800, 700)
+        role_to_window_pos["LIVvoltage"] = (803, 3, 800, 700)
+        role_to_window_pos["LIVspectrummean"] = (803, 3, 800, 700)
+        role_to_window_pos["LIVintensity"] = (803, 3, 800, 700)
+        role_to_window_pos["LTpower"] = (803, 3, 800, 700)
+        role_to_window_pos["LTvoltage"] = (803, 3, 800, 700)
+        role_to_window_pos["LTtemperature"] = (803, 3, 800, 700)
+        role_to_window_pos["PULSEpower"] = (803, 3, 800, 700)
+        role_to_window_pos["PULSEvoltage"] = (803, 3, 800, 700)
+        role_to_window_pos["PULSEintensity"] = (803, 3, 800, 700)
         self.role_to_window_pos = role_to_window_pos
 
         role_to_hvlines: Dict[str, Tuple[bool, bool]] = {}
@@ -195,30 +197,42 @@ class SubwindowPlot(QMdiSubWindow):
         return
 
     def setup_ui(self) -> None:
-        
-        # Add new subwindow to Mdi Area
         self.setWindowTitle(self.role_to_title[self.role])
+        self.setGeometry(*self.role_to_window_pos[self.role])
         self.mdi.addSubWindow(self)
 
-        # Define subwindow layout
-        
-        self.setGeometry(*self.role_to_window_pos[self.role])
         plot_window_widget = QWidget()
-        plot_window_layout = QVBoxLayout()
-        plot_window_widget.setLayout(plot_window_layout)
         self.setWidget(plot_window_widget)
+        plot_window_layout = QHBoxLayout()
+        plot_window_widget.setLayout(plot_window_layout)
 
-        # Manual tick locators setup
-        grid_layout_edits = QGridLayout()
+        panel = self.setup_control_panel()
+        plot_window_layout.addWidget(panel, stretch=1)
+
+        plot = self.setup_plot_widget()
+        plot_window_layout.addWidget(plot, stretch=3)
+
+        self.table.resizeColumnToContents(0)
+        self.table.resizeColumnToContents(1)
+        self.table.resizeColumnToContents(2)
+
+        self.show()
+        return
+
+    def setup_control_panel(self) -> QWidget:
+        panel = QWidget()
+        layout = QVBoxLayout()
+        panel.setLayout(layout)
+
+        form = QFormLayout()
+        layout.addLayout(form)
+
         x_multiple_locator_edit = QLineEdit(placeholderText="100")
-        y_multiple_locator_edit = QLineEdit(placeholderText="5")
-        grid_layout_edits.addWidget(QLabel("X Axis Tick Size"), 0, 0)
-        grid_layout_edits.addWidget(x_multiple_locator_edit, 0, 1)
-        grid_layout_edits.addWidget(QLabel("Y Axis Tick Size"), 0, 2)
-        grid_layout_edits.addWidget(y_multiple_locator_edit, 0, 3)
-        plot_window_layout.addLayout(grid_layout_edits)
+        form.addRow("X Axis Tick Size", x_multiple_locator_edit)
 
-        # Connect tick locator signals and slots
+        y_multiple_locator_edit = QLineEdit(placeholderText="5")
+        form.addRow("Y Axis Tick Size", y_multiple_locator_edit)
+
         tmp_slot = lambda edits=(
             x_multiple_locator_edit,
             y_multiple_locator_edit,
@@ -226,44 +240,67 @@ class SubwindowPlot(QMdiSubWindow):
         x_multiple_locator_edit.editingFinished.connect(tmp_slot)
         y_multiple_locator_edit.editingFinished.connect(tmp_slot)
 
-        # Legend configuration
-        legend_config_box = QHBoxLayout()
-        plot_window_layout.addLayout(legend_config_box)
-
-        show_legend_checkbox = QCheckBox("Show legend")
+        show_legend_checkbox = QCheckBox()
         show_legend_checkbox.setChecked(True)
         show_legend_checkbox.stateChanged.connect(self.show_legend_checkbox_slot)
-        legend_config_box.addWidget(show_legend_checkbox)
+        form.addRow("Show legend", show_legend_checkbox)
 
-        put_legend_outside_checkbox = QCheckBox("Put legend outside")
+        put_legend_outside_checkbox = QCheckBox()
         put_legend_outside_checkbox.stateChanged.connect(self.put_legend_outside_slot)
-        legend_config_box.addWidget(put_legend_outside_checkbox)
+        form.addRow("Put legend outside", put_legend_outside_checkbox)
 
-        # Approximatiom mode configuration
-        approx_mode_box = QHBoxLayout()
-        approx_mode_label = QLabel("Approximation mode")
         approx_mode_combobox = QComboBox()
-        approx_mode_combobox.addItem("Two Point fit")
-        approx_mode_combobox.addItem("Linear Regression fit")
-        approx_mode_box.addWidget(approx_mode_label)
-        approx_mode_box.addWidget(approx_mode_combobox)
-        plot_window_layout.addLayout(approx_mode_box)
+        approx_mode_combobox.addItems(["Two Point", "Linear Regression"])
         approx_mode_combobox.currentIndexChanged.connect(self.approx_mode_changed_slot)
+        form.addRow("Approximation mode", approx_mode_combobox)
 
         if self.role == "LIVspectrummean":
-            cold_wavelength_box = QHBoxLayout()
-            cold_wavelength_label = QLabel("Cold wavelength, nm")
-            cold_wavelength_edit = QLineEdit(text="805")
-            cold_wavelength_box.addWidget(cold_wavelength_label)
-            cold_wavelength_box.addWidget(cold_wavelength_edit)
-            cold_wavelength_edit.editingFinished.connect(
-                lambda edit=cold_wavelength_edit: self.plot_controller.cold_wavelength_changed.emit(
+            self.cold_wavelength_edit = QLineEdit(text="805")
+            self.cold_wavelength_edit.editingFinished.connect(
+                lambda edit=self.cold_wavelength_edit: self.plot_controller.cold_wavelength_changed.emit(
                     edit
                 )
             )
-            plot_window_layout.addLayout(cold_wavelength_box)
+            form.addRow("Cold wavelength, nm", self.cold_wavelength_edit)
 
-        # Create canvas backend
+        self.table = QTableWidget()
+        self.table.setColumnCount(3)
+        self.table.setRowCount(len(self.labels))
+        self.table.setHorizontalHeaderLabels(["Naming", "Show", "Approx."])
+        self.table.setVerticalScrollMode(QTableWidget.ScrollPerPixel)
+        self.table.setHorizontalScrollMode(QTableWidget.ScrollPerPixel)
+
+        layout.addWidget(self.table)
+
+        checkboxes_show: List[QCheckBox] = []
+        checkboxes_approx: List[QCheckBox] = []
+        for i, label in enumerate(self.labels):
+            self.table.setCellWidget(i, 0, QLabel(label))
+
+            checkbox_show = QCheckBox()
+            checkbox_show.setChecked(True)
+            self.table.setCellWidget(i, 1, checkbox_show)
+            checkboxes_show.append(checkbox_show)
+
+            checkbox_approx = QCheckBox()
+            self.table.setCellWidget(i, 2, checkbox_approx)
+            checkboxes_approx.append(checkbox_approx)
+
+        for i, label in enumerate(self.labels):
+            checkboxes_show[i].stateChanged.connect(
+                lambda _, i=i: self.plot_controller.plot_visibility_toggled.emit(i)
+            )
+            checkboxes_approx[i].stateChanged.connect(
+                lambda _, i=i: self.plot_controller.draggable_visibility_toggled.emit(i)
+            )
+
+        return panel
+
+    def setup_plot_widget(self) -> QWidget:
+        plot = QWidget()
+        layout = QVBoxLayout()
+        plot.setLayout(layout)
+
         self.mplwidget = MplWidget(
             self.plot_controller,
             xlabel=self.role_to_axes[self.role][0],
@@ -272,15 +309,14 @@ class SubwindowPlot(QMdiSubWindow):
         )
         if self.role == "LIVspectrummean":
             self.mplwidget.secxaxis = None
-            self.plot_controller.cold_wavelength_changed.emit(cold_wavelength_edit)
+            self.plot_controller.cold_wavelength_changed.emit(self.cold_wavelength_edit)
 
         self.mplwidget.setMinimumHeight(500)
         self.mplwidget.setMinimumWidth(500)
         toolbar = ModifiedToolbar(self.mplwidget.canvas, self.mplwidget.fig, None)
-        plot_window_layout.addWidget(toolbar)
-        plot_window_layout.addWidget(self.mplwidget)
+        layout.addWidget(toolbar)
+        layout.addWidget(self.mplwidget)
 
-        # Add plot lines
         for i, (label, xs, ys) in enumerate(zip(self.labels, self.xss, self.yss)):
             self.mplwidget.plot(xs, ys, label=label, linewidth=1)
 
@@ -293,57 +329,7 @@ class SubwindowPlot(QMdiSubWindow):
             self.mplwidget.axes.axvline(0.0, color="black")
 
         self.plot_controller.touch_legend.emit()
-
-        table = QTableWidget()
-        table.setColumnCount(3)
-        table.setRowCount(len(self.labels))
-        table.setHorizontalHeaderLabels(["Naming", "Show", "Approx."])
-        table.setColumnWidth(0, 250)
-        table.resizeColumnToContents(1)
-        table.resizeColumnToContents(2)
-        table.setMinimumHeight(50)
-        table.setMaximumHeight(150)
-        # table.setFixedHeight(150)
-        table.setVerticalScrollMode(QTableWidget.ScrollPerPixel)
-        table.setHorizontalScrollMode(QTableWidget.ScrollPerPixel)
-
-        plot_window_layout.addWidget(table)
-
-        # Generate checkboxes in a grid
-        checkboxes_show: List[QCheckBox] = []
-        checkboxes_approx: List[QCheckBox] = []
-        checkbox_style = """
-                QCheckBox::indicator {
-                    width: 25px;
-                    height: 25px;
-                }
-            """
-        for i, label in enumerate(self.labels):
-            table.setCellWidget(i, 0, QLabel(label))
-
-            checkbox_show = QCheckBox()
-            checkbox_show.setChecked(True)
-            checkbox_show.setStyleSheet(checkbox_style)
-            table.setCellWidget(i, 1, checkbox_show)
-            checkboxes_show.append(checkbox_show)
-
-            checkbox_approx = QCheckBox()
-            # checkbox_approx.setChecked(False)
-            checkbox_approx.setStyleSheet(checkbox_style)
-            table.setCellWidget(i, 2, checkbox_approx)
-            checkboxes_approx.append(checkbox_approx)
-
-        # Connect visibility slots and signals
-        for i, label in enumerate(self.labels):
-            checkboxes_show[i].stateChanged.connect(
-                lambda _, i=i: self.plot_controller.plot_visibility_toggled.emit(i)
-            )
-            checkboxes_approx[i].stateChanged.connect(
-                lambda _, i=i: self.plot_controller.draggable_visibility_toggled.emit(i)
-            )
-
-        self.show()
-        return
+        return plot
 
     def show_legend_checkbox_slot(self, state) -> None:
         if Qt.CheckState(state) == Qt.Checked:
