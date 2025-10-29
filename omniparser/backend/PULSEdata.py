@@ -3,6 +3,8 @@ from math import nan
 
 import re
 
+from backend.misc import convert_to_float_or_nan
+
 NUMBER_PATTERN = r"[-+]?\d*\.?\d+|NaN|nan|NAN"
 
 
@@ -80,10 +82,10 @@ class PULSEparser:
         voltage_all = []
         current_monitor = []
         while foundall := re.findall(NUMBER_PATTERN, data.lines[i]):
-            current_all.append(float(foundall[0]))
-            power_all.append(float(foundall[1]))
-            voltage_all.append(float(foundall[2]))
-            current_monitor.append(float(foundall[3]))
+            current_all.append(convert_to_float_or_nan(foundall[0]))
+            power_all.append(convert_to_float_or_nan(foundall[1]))
+            voltage_all.append(convert_to_float_or_nan(foundall[2]))
+            current_monitor.append(convert_to_float_or_nan(foundall[3]))
             i += 1
 
         data.add_LIV("Current, A", current_all)
@@ -116,11 +118,11 @@ class PULSEparser:
         max_wl_all = []
         dispersion_all = []
         while foundall := re.findall(NUMBER_PATTERN, data.lines[i]):
-            current_all.append(float(foundall[0]))
-            fwhm_all.append(float(foundall[1]))
-            mean_wl_all.append(float(foundall[2]))
-            max_wl_all.append(float(foundall[3]))
-            dispersion_all.append(float(foundall[4]))
+            current_all.append(convert_to_float_or_nan(foundall[0]))
+            fwhm_all.append(convert_to_float_or_nan(foundall[1]))
+            mean_wl_all.append(convert_to_float_or_nan(foundall[2]))
+            max_wl_all.append(convert_to_float_or_nan(foundall[3]))
+            dispersion_all.append(convert_to_float_or_nan(foundall[4]))
             i += 1
 
         data.add_LIV("Current, A", current_all)
@@ -167,9 +169,9 @@ class PULSEparser:
             foundall = re.findall(NUMBER_PATTERN, line)
             if not foundall:
                 break
-            wl_all.append(float(foundall[0]))
+            wl_all.append(convert_to_float_or_nan(foundall[0]))
             for j, current in enumerate(current_all):
-                intensity_all[f"Intensity (current={current}A)"].append(float(foundall[j+1]))
+                intensity_all[f"Intensity (current={current}A)"].append(convert_to_float_or_nan(foundall[j+1]))
 
         data.add_LIV("Current, A", current_all)
         data.add_LIV("Wavelength, nm", wl_all)

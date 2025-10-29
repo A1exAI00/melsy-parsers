@@ -3,6 +3,8 @@ from math import nan
 
 import re
 
+from backend.misc import convert_to_float_or_nan
+
 NUMBER_PATTERN = r"[-+]?\d*\.?\d+|NaN|nan|NAN"
 
 
@@ -123,11 +125,11 @@ class LIVparser:
         wl_all_first: List[float] = []
         while foundall := re.findall(NUMBER_PATTERN, data.lines[i]):
             line = data.lines[i]
-            wl_all_first.append(float(foundall[0]))
+            wl_all_first.append(convert_to_float_or_nan(foundall[0]))
             for j, current in enumerate(current_all):
                 intensity_all[
                     f"Intensity (current={current}A, DAT={DAT[0]} ms)"
-                ].append(float(foundall[j + 1]))
+                ].append(convert_to_float_or_nan(foundall[j + 1]))
             i += 1
 
         data.add_LIV("Current, A", current_all)
@@ -156,11 +158,11 @@ class LIVparser:
         wl_all_second: List[float] = []
         while foundall := re.findall(NUMBER_PATTERN, data.lines[i]):
             line = data.lines[i]
-            wl_all_second.append(float(foundall[0]))
+            wl_all_second.append(convert_to_float_or_nan(foundall[0]))
             for j, current in enumerate(current_all):
                 intensity_all[
                     f"Intensity (current={current}A, DAT={DAT[1]} ms)"
-                ].append(float(foundall[j + 1]))
+                ].append(convert_to_float_or_nan(foundall[j + 1]))
             i += 1
 
         data.add_LIV("Current, A", current_all)
@@ -177,7 +179,7 @@ class LIVparser:
         numbers = []
         for match in number_matches:
             try:
-                float_match = float(match)
+                float_match = convert_to_float_or_nan(match)
                 numbers.append(float_match)
             except ValueError:
                 numbers.append(nan)

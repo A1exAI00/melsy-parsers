@@ -7,6 +7,7 @@ from backend.misc import (
     normalize_time,
     convert_hours_float_to_timedelta,
     convert_timedelta_to_string,
+    convert_to_float_or_nan,
 )
 
 ABSOLUTE_TIME_PATTERN = r"\d{2}\.\d{2}\.\d{4}\s\d{2}:\d{2}:\d{2}"
@@ -110,7 +111,7 @@ class LTparser:
                     ndigits=5,
                 )
             )
-            powers.append(float(power))
+            powers.append(convert_to_float_or_nan(power))
 
         data.add_LT("Reletive time", times_str)
         data.add_LT("Reletive time, h", normalize_time(times_float))
@@ -160,10 +161,10 @@ class LTparser:
                 tank_water_temp = re.findall(NUMBER_PATTERN, line)[13]
 
                 rel_time_str_all.append(rel_time)
-                current_all.append(float(current))
-                voltage_all.append(float(voltage))
-                power_avg_all.append(float(power_avg))
-                temperature_all.append(float(tank_water_temp))
+                current_all.append(convert_to_float_or_nan(current))
+                voltage_all.append(convert_to_float_or_nan(voltage))
+                power_avg_all.append(convert_to_float_or_nan(power_avg))
+                temperature_all.append(convert_to_float_or_nan(tank_water_temp))
 
         timedeltas = [convert_string_to_timedelta(each) for each in rel_time_str_all]
         float_times = [convert_timedelta_to_hours(each) for each in timedeltas]
