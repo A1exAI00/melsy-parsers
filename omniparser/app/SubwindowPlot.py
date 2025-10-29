@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Dict, Tuple
 
 from PySide6.QtWidgets import (
     QVBoxLayout,
@@ -36,185 +36,173 @@ class SubwindowPlot(QMdiSubWindow):
         self.mdi = mdi
         self.role = role
         self.datas = datas
+
+        self.labels: List[str] = []
+        self.xss: List[List[float]] = []
+        self.yss: List[List[float]] = []
+
         super().__init__()
+        self.parse_role()
         self.setup_ui()
         self.connect_controller()
         return
 
     def connect_controller(self) -> None:
         return
+    
+    def parse_role(self) -> None:
+        role_to_title: Dict[str, str] = {}
+        role_to_title["LIVpower"] = "LIV power(set current) plot window"
+        role_to_title["LIVvoltage"] = "LIV vontage(set current) plot window"
+        role_to_title["LIVspectrummean"] = "LIV WLmean(set current) plot window"
+        role_to_title["LIVintensity"] = "LIV intensity(WL) plot window"
+        role_to_title["LTpower"] = "LT power(time) plot window"
+        role_to_title["LTvoltage"] = "LT voltage(time) plot window"
+        role_to_title["LTtemperature"] = "LT temperature(time) plot window"
+        role_to_title["PULSEpower"] = "PULSE power(set current) plot window"
+        role_to_title["PULSEvoltage"] = "PULSE voltage(set current) plot window"
+        role_to_title["PULSEintensity"] = "PULSE intensity(WL) plot window"
+        self.role_to_title = role_to_title
 
-    def setup_ui(self) -> None:
-        datas = None
+        role_to_axes: Dict[str, List[str | None]] = {}
+        role_to_axes["LIVpower"] = ["Set, A", None, "Power, W", None]
+        role_to_axes["LIVvoltage"] = ["Set, A", None, "Voltage, V", None]
+        role_to_axes["LIVspectrummean"] = ["Set, A", None, "WLmean, nm", None]
+        role_to_axes["LIVintensity"] = ["Wavelength, nm", None, "Intensity", None]
+        role_to_axes["LTpower"] = ["Time, h", None, "Power (avg), W", None]
+        role_to_axes["LTvoltage"] = ["Time, h", None, "Voltage, V", None]
+        role_to_axes["LTtemperature"] = ["Time, h", None, "Tank water temp., C", None]
+        role_to_axes["PULSEpower"] = ["Current, A", None, "Power, W", None]
+        role_to_axes["PULSEvoltage"] = ["Current, A", None, "Voltage, V", None]
+        role_to_axes["PULSEintensity"] = ["Wavelength, nm", None, "Intensity", None]
+        self.role_to_axes = role_to_axes
+
+        role_to_window_pos: Dict[str, Tuple[float, float, float, float]] = {}
+        role_to_window_pos["LIVpower"] = (1003, 3, 500, 800)
+        role_to_window_pos["LIVvoltage"] = (1003, 3, 500, 800)
+        role_to_window_pos["LIVspectrummean"] = (1003, 3, 500, 800)
+        role_to_window_pos["LIVintensity"] = (1003, 3, 500, 800)
+        role_to_window_pos["LTpower"] = (1003, 3, 500, 800)
+        role_to_window_pos["LTvoltage"] = (1003, 3, 500, 800)
+        role_to_window_pos["LTtemperature"] = (1003, 3, 500, 800)
+        role_to_window_pos["PULSEpower"] = (1003, 3, 500, 800)
+        role_to_window_pos["PULSEvoltage"] = (1003, 3, 500, 800)
+        role_to_window_pos["PULSEintensity"] = (1003, 3, 500, 800)
+        self.role_to_window_pos = role_to_window_pos
+
+        role_to_hvlines: Dict[str, Tuple[bool, bool]] = {}
+        role_to_hvlines["LIVpower"] = (True, True)
+        role_to_hvlines["LIVvoltage"] = (True, True)
+        role_to_hvlines["LIVspectrummean"] = (False, True)
+        role_to_hvlines["LIVintensity"] = (True, False)
+        role_to_hvlines["LTpower"] = (True, True)
+        role_to_hvlines["LTvoltage"] = (False, True)
+        role_to_hvlines["LTtemperature"] = (False, True)
+        role_to_hvlines["PULSEpower"] = (True, True)
+        role_to_hvlines["PULSEvoltage"] = (True, True)
+        role_to_hvlines["PULSEintensity"] = (True, False)
+        self.role_to_hvlines = role_to_hvlines
+
         match self.role:
             case "LIVpower":
-                this_title = "LIV power(set current) plot window"
-                X_axis_label = "Set, A"
-                Y_axis_label = "Power, W"
-                labels = []
-                X_arrays = []
-                Y_arrays = []
                 keys_filter = ["Power, W", "OPM"]
                 for data in self.datas:
                     for key in keys_filter:
                         if key in data.LIV.keys():
-                            labels.append(data.other_data["Name"])
-                            X_arrays.append(data.LIV["Set, A"])
-                            Y_arrays.append(data.LIV[key])
-                sub_x_position, sub_y_position = 1003, 3
-                sub_w, sub_h = 500, 800
-                axhline_needed, axvline_needed = True, True
+                            self.labels.append(data.other_data["Name"])
+                            self.xss.append(data.LIV["Set, A"])
+                            self.yss.append(data.LIV[key])
             case "LIVvoltage":
-                this_title = "LIV vontage(set current) plot window"
-                X_axis_label = "Set, A"
-                Y_axis_label = "Voltage, V"
-                labels = []
-                X_arrays = []
-                Y_arrays = []
                 keys_filter = ["Voltage, V", "AI_Voltage"]
                 for data in self.datas:
                     for key in keys_filter:
                         if key in data.LIV.keys():
-                            labels.append(data.other_data["Name"])
-                            X_arrays.append(data.LIV["Set, A"])
-                            Y_arrays.append(data.LIV[key])
-                sub_x_position, sub_y_position = 1003, 3
-                sub_w, sub_h = 500, 800
-                axhline_needed, axvline_needed = True, True
+                            self.labels.append(data.other_data["Name"])
+                            self.xss.append(data.LIV["Set, A"])
+                            self.yss.append(data.LIV[key])
             case "LIVspectrummean":
-                this_title = "LIV WLmean(set current) plot window"
-                X_axis_label = "Set, A"
-                Y_axis_label = "WLmean, nm"
-                labels = []
-                X_arrays = []
-                Y_arrays = []
                 for data in self.datas:
                     keys = data.LIV.keys()
                     this_name = data.other_data["Name"]
                     for key in keys:
                         if "WLmean, nm" in key:
-                            labels.append(this_name + str(key)[len("WLmean, nm") :])
-                            X_arrays.append(data.LIV["Set, A"])
-                            Y_arrays.append(data.LIV[key])
-                sub_x_position, sub_y_position = 1003, 3
-                sub_w, sub_h = 500, 800
-                axhline_needed, axvline_needed = False, True
+                            self.labels.append(
+                                this_name + str(key)[len("WLmean, nm") :]
+                            )
+                            self.xss.append(data.LIV["Set, A"])
+                            self.yss.append(data.LIV[key])
             case "LIVintensity":
-                this_title = "LIV intensity(WL) plot window"
-                X_axis_label = "Wavelength, nm"
-                Y_axis_label = "Intensity, ??"
                 datas: List[LTdata] = list(
                     filter(
                         lambda each: isinstance(each, LIVdata),
                         self.datas,
                     )
                 )
-                labels = []
-                X_arrays = []
-                Y_arrays = []
                 for data in datas:
                     keys = data.LIV.keys()
                     this_name = data.other_data["Name"]
                     for key in keys:
                         if "Intensity" in key:
-                            labels.append(str(key)[len("Intensity") :])
-                            X_arrays.append(data.LIV["Wavelength1, nm"])
-                            Y_arrays.append(data.LIV[key])
-                sub_x_position, sub_y_position = 1203, 3
-                sub_w, sub_h = 500, 800
-                axhline_needed, axvline_needed = True, False
+                            self.labels.append(str(key)[len("Intensity") :])
+                            self.xss.append(data.LIV["Wavelength1, nm"])
+                            self.yss.append(data.LIV[key])
             case "LTpower":
-                this_title = "LT power(time) plot window"
-                X_axis_label = "Reletive time, h"
-                Y_axis_label = "Power (avg), W"
-                labels = [data.other_data["Name"] for data in self.datas]
-                X_arrays = [data.LT["Reletive time, h"] for data in self.datas]
-                Y_arrays = [data.LT["Power (avg), W"] for data in self.datas]
-                sub_x_position, sub_y_position = 1003, 3
-                sub_w, sub_h = 500, 800
-                axhline_needed, axvline_needed = True, True
+                self.labels = [data.other_data["Name"] for data in self.datas]
+                self.xss = [data.LT["Reletive time, h"] for data in self.datas]
+                self.yss = [data.LT["Power (avg), W"] for data in self.datas]
             case "LTvoltage":
-                this_title = "LT voltage(time) plot window"
-                X_axis_label = "Reletive time, h"
-                Y_axis_label = "Voltage, V"
                 datas: List[LTdata] = list(
                     filter(lambda each: each.GIVIK_version == 2, self.datas)
                 )
-                labels = [data.other_data["Name"] for data in datas]
-                X_arrays = [data.LT["Reletive time, h"] for data in datas]
-                Y_arrays = [data.LT["Voltage, V"] for data in datas]
-                sub_x_position, sub_y_position = 1103, 3
-                sub_w, sub_h = 500, 800
-                axhline_needed, axvline_needed = False, True
+                self.labels = [data.other_data["Name"] for data in datas]
+                self.xss = [data.LT["Reletive time, h"] for data in datas]
+                self.yss = [data.LT["Voltage, V"] for data in datas]
             case "LTtemperature":
-                this_title = "LT temperature(time) plot window"
-                X_axis_label = "Reletive time, h"
-                Y_axis_label = "Tank water temp., C"
                 datas: List[LTdata] = list(
                     filter(lambda each: each.GIVIK_version == 2, self.datas)
                 )
-                labels = [data.other_data["Name"] for data in datas]
-                X_arrays = [data.LT["Reletive time, h"] for data in datas]
-                Y_arrays = [data.LT["Tank water temp., C"] for data in datas]
-                sub_x_position, sub_y_position = 1203, 3
-                sub_w, sub_h = 500, 800
-                axhline_needed, axvline_needed = False, True
+                self.labels = [data.other_data["Name"] for data in datas]
+                self.xss = [data.LT["Reletive time, h"] for data in datas]
+                self.yss = [data.LT["Tank water temp., C"] for data in datas]
             case "PULSEpower":
-                this_title = "PULSE power(set current) plot window"
-                X_axis_label = "Current, A"
-                Y_axis_label = "Power, W"
                 datas: List[LTdata] = list(
                     filter(lambda each: "LIV" in each.mode, self.datas)
                 )
-                labels = [data.other_data["Name"] for data in datas]
-                X_arrays = [data.LIV["Current, A"] for data in datas]
-                Y_arrays = [data.LIV["Power, W"] for data in datas]
-                sub_x_position, sub_y_position = 1003, 3
-                sub_w, sub_h = 500, 800
-                axhline_needed, axvline_needed = True, True
+                self.labels = [data.other_data["Name"] for data in datas]
+                self.xss = [data.LIV["Current, A"] for data in datas]
+                self.yss = [data.LIV["Power, W"] for data in datas]
             case "PULSEvoltage":
-                this_title = "PULSE voltage(set current) plot window"
-                X_axis_label = "Current, A"
-                Y_axis_label = "Voltage, V"
                 datas: List[LTdata] = list(
                     filter(lambda each: "LIV" in each.mode, self.datas)
                 )
-                labels = [data.other_data["Name"] for data in datas]
-                X_arrays = [data.LIV["Current, A"] for data in datas]
-                Y_arrays = [data.LIV["Voltage, V"] for data in datas]
-                sub_x_position, sub_y_position = 1203, 3
-                sub_w, sub_h = 500, 800
-                axhline_needed, axvline_needed = True, True
+                self.labels = [data.other_data["Name"] for data in datas]
+                self.xss = [data.LIV["Current, A"] for data in datas]
+                self.yss = [data.LIV["Voltage, V"] for data in datas]
             case "PULSEintensity":
-                this_title = "PULSE intensity(WL) plot window"
-                X_axis_label = "Wavelength, nm"
-                Y_axis_label = "Intensity, ??"
                 datas: List[LTdata] = list(
                     filter(lambda each: "Spectrum" in each.mode, self.datas)
                 )
-                labels = []
-                X_arrays = []
-                Y_arrays = []
                 for data in datas:
                     keys = data.LIV.keys()
                     this_name = data.other_data["Name"]
                     for key in keys:
                         if "Intensity" in key:
-                            labels.append(str(key)[len("Intensity") :])
-                            X_arrays.append(data.LIV["Wavelength, nm"])
-                            Y_arrays.append(data.LIV[key])
-                sub_x_position, sub_y_position = 1203, 3
-                sub_w, sub_h = 500, 800
-                axhline_needed, axvline_needed = True, False
+                            self.labels.append(str(key)[len("Intensity") :])
+                            self.xss.append(data.LIV["Wavelength, nm"])
+                            self.yss.append(data.LIV[key])
             case _:
                 raise Exception("Unknown role of plot window")
+        return
 
+    def setup_ui(self) -> None:
+        
         # Add new subwindow to Mdi Area
-        self.setWindowTitle(this_title)
+        self.setWindowTitle(self.role_to_title[self.role])
         self.mdi.addSubWindow(self)
 
         # Define subwindow layout
-        self.setGeometry(sub_x_position, sub_y_position, sub_w, sub_h)
+        
+        self.setGeometry(*self.role_to_window_pos[self.role])
         plot_window_widget = QWidget()
         plot_window_layout = QVBoxLayout()
         plot_window_widget.setLayout(plot_window_layout)
@@ -278,8 +266,8 @@ class SubwindowPlot(QMdiSubWindow):
         # Create canvas backend
         self.mplwidget = MplWidget(
             self.plot_controller,
-            xlabel=X_axis_label,
-            ylabel=Y_axis_label,
+            xlabel=self.role_to_axes[self.role][0],
+            ylabel=self.role_to_axes[self.role][2],
             role=self.role,
         )
         if self.role == "LIVspectrummean":
@@ -293,13 +281,12 @@ class SubwindowPlot(QMdiSubWindow):
         plot_window_layout.addWidget(self.mplwidget)
 
         # Add plot lines
-        for i, label in enumerate(labels):
-            X_data = X_arrays[i]
-            Y_data = Y_arrays[i]
-            self.mplwidget.plot(X_data, Y_data, label=label, linewidth=1)
+        for i, (label, xs, ys) in enumerate(zip(self.labels, self.xss, self.yss)):
+            self.mplwidget.plot(xs, ys, label=label, linewidth=1)
 
         self.mplwidget.connect_mplcursor()
 
+        axhline_needed, axvline_needed = self.role_to_hvlines[self.role]
         if axhline_needed:
             self.mplwidget.axes.axhline(0.0, color="black")
         if axvline_needed:
@@ -309,7 +296,7 @@ class SubwindowPlot(QMdiSubWindow):
 
         table = QTableWidget()
         table.setColumnCount(3)
-        table.setRowCount(len(labels))
+        table.setRowCount(len(self.labels))
         table.setHorizontalHeaderLabels(["Naming", "Show", "Approx."])
         table.setColumnWidth(0, 250)
         table.resizeColumnToContents(1)
@@ -331,7 +318,7 @@ class SubwindowPlot(QMdiSubWindow):
                     height: 25px;
                 }
             """
-        for i, label in enumerate(labels):
+        for i, label in enumerate(self.labels):
             table.setCellWidget(i, 0, QLabel(label))
 
             checkbox_show = QCheckBox()
@@ -347,7 +334,7 @@ class SubwindowPlot(QMdiSubWindow):
             checkboxes_approx.append(checkbox_approx)
 
         # Connect visibility slots and signals
-        for i, label in enumerate(labels):
+        for i, label in enumerate(self.labels):
             checkboxes_show[i].stateChanged.connect(
                 lambda _, i=i: self.plot_controller.plot_visibility_toggled.emit(i)
             )
