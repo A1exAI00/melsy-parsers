@@ -60,21 +60,15 @@ class SubwindowResult(QMdiSubWindow):
         box.addWidget(self.quick_clipboard_button)
 
         button = QPushButton("Open power(set current) plot")
-        button.clicked.connect(
-            lambda: self.create_power_plot_window_slot(datas)
-        )
+        button.clicked.connect(lambda: self.create_power_plot_window_slot(datas))
         box.addWidget(button)
 
         button = QPushButton("Open voltage(set current) plot")
-        button.clicked.connect(
-            lambda: self.create_voltage_plot_window_slot(datas)
-        )
+        button.clicked.connect(lambda: self.create_voltage_plot_window_slot(datas))
         box.addWidget(button)
 
         button = QPushButton("Open power(WL) plot")
-        button.clicked.connect(
-            lambda: self.create_power_WL_plot_window_slot(datas)
-        )
+        button.clicked.connect(lambda: self.create_power_WL_plot_window_slot(datas))
         box.addWidget(button)
 
         table_window_layout.addLayout(box)
@@ -105,9 +99,10 @@ class SubwindowResult(QMdiSubWindow):
             for name, value in data.other_data.items():
                 if name == "Name":
                     continue
+
                 if re.search("frequency", name.lower()):
                     self.append_to_results_table((name, f"{value:.0f} Hz"))
-                if re.search("duration", name.lower()):
+                elif re.search("duration", name.lower()):
                     self.append_to_results_table((name, f"{value:.{self.ndigits}g} ms"))
                 else:
                     self.append_to_results_table((name, value))
@@ -156,14 +151,16 @@ class SubwindowResult(QMdiSubWindow):
                 self.table.item(self.table.rowCount() - 1, i).setText("")
                 continue
 
-            # Float 
+            # Float
             if isinstance(value, float):
                 if np.isnan(value) or isnan(value):
                     self.table.item(self.table.rowCount() - 1, i).setText("NaN")
-                else: 
-                    self.table.item(self.table.rowCount() - 1, i).setText(f"{value:.{self.ndigits}g}")
+                else:
+                    self.table.item(self.table.rowCount() - 1, i).setText(
+                        f"{value:.{self.ndigits}g}"
+                    )
                 continue
-            
+
             # String
             if isinstance(value, str):
                 if "nan" == value.lower().strip():
@@ -171,7 +168,7 @@ class SubwindowResult(QMdiSubWindow):
                 else:
                     self.table.item(self.table.rowCount() - 1, i).setText(value)
                 continue
-            
+
         return
 
     def create_power_plot_window_slot(self, datas: List[PULSEdata]) -> None:

@@ -111,9 +111,10 @@ class SubwindowResult(QMdiSubWindow):
             for name, value in data.other_data.items():
                 if name == "Name":
                     continue
+
                 if re.search("frequency", name.lower()):
                     self.append_to_results_table((name, f"{value:.0f} Hz"))
-                if re.search("duration", name.lower()):
+                elif re.search("duration", name.lower()):
                     self.append_to_results_table((name, f"{value:.{self.ndigits}g} ms"))
                 else:
                     self.append_to_results_table((name, value))

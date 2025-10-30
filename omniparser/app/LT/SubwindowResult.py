@@ -105,16 +105,22 @@ class SubwindowResult(QMdiSubWindow):
             for name, value in data.other_data.items():
                 if name == "Name":
                     continue
+
                 if re.search("frequency", name.lower()):
                     self.append_to_results_table((name, f"{value:.0f} Hz"))
-                if re.search("duration", name.lower()):
+                elif re.search("duration", name.lower()):
                     self.append_to_results_table((name, f"{value:.{self.ndigits}g} ms"))
                 else:
                     self.append_to_results_table((name, value))
 
             # Append LT data
             for i, (name, values) in enumerate(data.LT.items()):
-                self.append_to_results_table([name,] + values)
+                self.append_to_results_table(
+                    [
+                        name,
+                    ]
+                    + values
+                )
 
             # Append empty row spacer
             if data_i != len(datas) - 1:
@@ -151,14 +157,16 @@ class SubwindowResult(QMdiSubWindow):
                 self.table.item(self.table.rowCount() - 1, i).setText("")
                 continue
 
-            # Float 
+            # Float
             if isinstance(value, float):
                 if np.isnan(value) or isnan(value):
                     self.table.item(self.table.rowCount() - 1, i).setText("NaN")
-                else: 
-                    self.table.item(self.table.rowCount() - 1, i).setText(f"{value:.{self.ndigits}g}")
+                else:
+                    self.table.item(self.table.rowCount() - 1, i).setText(
+                        f"{value:.{self.ndigits}g}"
+                    )
                 continue
-            
+
             # String
             if isinstance(value, str):
                 if "nan" == value.lower().strip():
@@ -166,7 +174,7 @@ class SubwindowResult(QMdiSubWindow):
                 else:
                     self.table.item(self.table.rowCount() - 1, i).setText(value)
                 continue
-            
+
         return
 
     def create_power_plot_window_slot(self, datas: List[LTdata]) -> None:
