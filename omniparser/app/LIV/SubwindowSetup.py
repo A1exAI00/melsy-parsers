@@ -179,13 +179,13 @@ class SubwindowSetup(QMdiSubWindow):
     def date_overwrite_slot(self) -> None:
         value = self.date_overwrite_edit.text()
         for i in range(1, self.table.rowCount()):
-            self.table.item(i, 2).setText(value)
+            self.table.item(i, 3).setText(value)
         return
 
     def n_rad_overwrite_slot(self) -> None:
         value = self.n_rad_overwrite_edit.text()
         for i in range(1, self.table.rowCount()):
-            self.table.item(i, 2).setText(value)
+            self.table.item(i, 4).setText(value)
         return
 
     def clear_table_slot(self) -> None:
