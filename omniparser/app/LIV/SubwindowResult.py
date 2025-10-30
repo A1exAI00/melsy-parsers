@@ -114,7 +114,7 @@ class SubwindowResult(QMdiSubWindow):
                 if re.search("frequency", name.lower()):
                     self.append_to_results_table((name, f"{value:.0f} Hz"))
                 if re.search("duration", name.lower()):
-                    self.append_to_results_table((name, f"{value:.{self.ndigits}f} ms"))
+                    self.append_to_results_table((name, f"{value:.{self.ndigits}g} ms"))
                 else:
                     self.append_to_results_table((name, value))
 
@@ -168,7 +168,7 @@ class SubwindowResult(QMdiSubWindow):
                     self.table.item(self.table.rowCount() - 1, i).setText("NaN")
                 else:
                     self.table.item(self.table.rowCount() - 1, i).setText(
-                        f"{value:.{self.ndigits}f}"
+                        f"{value:.{self.ndigits}g}"
                     )
                 continue
 
