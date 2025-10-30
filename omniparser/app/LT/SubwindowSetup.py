@@ -277,6 +277,10 @@ class SubwindowSetup(QMdiSubWindow):
             data.add_other_data("Name", self.table.item(i, 2).text())
 
             datas.append(data)
+
+        if not datas:
+            raise Exception("Setup table is empty")
+
         return datas
 
     def start_slot(self) -> None:
