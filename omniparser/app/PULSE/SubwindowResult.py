@@ -68,7 +68,7 @@ class SubwindowResult(QMdiSubWindow):
         button.clicked.connect(lambda: self.create_voltage_plot_window_slot(datas))
         box.addWidget(button)
 
-        button = QPushButton("Open power(WL) plot")
+        button = QPushButton("Open intensity(WL) plot")
         button.clicked.connect(lambda: self.create_power_WL_plot_window_slot(datas))
         box.addWidget(button)
 
