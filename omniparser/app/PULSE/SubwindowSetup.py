@@ -152,6 +152,7 @@ class SubwindowSetup(QMdiSubWindow):
                 item = self.table.item(i, j)
                 if isinstance(item, QTableWidgetItem):
                     item.setText("")
+                    item.setToolTip("")
         return
 
     def add_row_slot(self) -> None:
@@ -219,6 +220,7 @@ class SubwindowSetup(QMdiSubWindow):
             # Set filepaths
             item = self.table.item(current_row, 0)
             item.setText(filepath)
+            item.setToolTip(filepath)
 
             self.table.item(current_row, 2).setText(basename(filepath))
         return
@@ -256,6 +258,7 @@ class SubwindowSetup(QMdiSubWindow):
             # Set filepaths
             item = self.table.item(current_row, 0)
             item.setText(filepath)
+            item.setToolTip(filepath)
 
             self.table.item(current_row, 2).setText(basename(filepath))
 
