@@ -23,7 +23,7 @@ class MainWindow(QMainWindow):
     def __init__(self, controller: "MainController"):
         super().__init__()
         self.controller = controller
-        self.window_title = "melsytech LT parser"
+        self.window_title = "melsytech Omniparser"
         self.plot_windows: Dict[str, QMdiSubWindow] = {}
 
         self.start_cooldown_active = False
