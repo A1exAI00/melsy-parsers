@@ -111,3 +111,12 @@ def convert_to_float_or_nan(string: str) -> float:
     except:
         return nan
     return
+
+def my_float_format(value: float, ndigits: int) -> str:
+    default = f"{value:.{ndigits}f}"
+    before, after = default.split(".")
+    after = after.rstrip("0")
+    if after:
+        return ".".join([before, after])
+    else:
+        return before

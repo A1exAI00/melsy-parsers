@@ -19,6 +19,7 @@ from backend.PULSEdata import PULSEdata
 from app.MainController import MainController
 from app.SubController import SubController
 from app.SubwindowPlot import SubwindowPlot
+from backend.misc import my_float_format
 
 
 class SubwindowResult(QMdiSubWindow):
@@ -103,7 +104,7 @@ class SubwindowResult(QMdiSubWindow):
                 if re.search("frequency", name.lower()):
                     self.append_to_results_table((name, f"{value:.0f} Hz"))
                 elif re.search("duration", name.lower()):
-                    self.append_to_results_table((name, f"{value:.{self.ndigits}g} ms"))
+                    self.append_to_results_table((name, my_float_format(value, self.ndigits) + " ms"))
                 else:
                     self.append_to_results_table((name, value))
 
@@ -157,7 +158,7 @@ class SubwindowResult(QMdiSubWindow):
                     self.table.item(self.table.rowCount() - 1, i).setText("NaN")
                 else:
                     self.table.item(self.table.rowCount() - 1, i).setText(
-                        f"{value:.{self.ndigits}g}"
+                        my_float_format(value, self.ndigits)
                     )
                 continue
 
