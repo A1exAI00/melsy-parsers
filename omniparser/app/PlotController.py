@@ -14,6 +14,7 @@ class PlotController(QObject):
     approx_mode_changed = Signal(int)
     cold_wavelength_changed = Signal(QLineEdit)
     legend_position_changed = Signal(bool)
+    cold_wavelength_mode_checkbox_changed = Signal(bool)
 
     def __init__(self):
         super().__init__()

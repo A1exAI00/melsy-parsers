@@ -34,6 +34,7 @@ class MplWidget(QWidget):
         self.xlabel = xlabel
         self.ylabel = ylabel
         self.role = role
+        self.user_defined_cold_wavelength = True
 
         self.dpi = 100
         self.figsize = (5, 4)
@@ -110,7 +111,9 @@ class MplWidget(QWidget):
         self.controller.legend_position_changed.connect(
             self.legend_position_changed_slot
         )
-
+        self.controller.cold_wavelength_mode_checkbox_changed.connect(
+            self.cold_wavelength_mode_checkbox_changed_slot
+        )
         return
 
     ############################################################################
@@ -456,58 +459,134 @@ class MplWidget(QWidget):
         return
 
     def mplcursor_connect_function(self, selection: mplcursors.Selection):
-        label = selection.artist.get_label()
+        label: str = selection.artist.get_label()
+
+        # if line is axis line
         if re.findall(r"_child\d+", label):
             selection.annotation.set_visible(False)
             return
+
+        # if line is approximation line
         if re.findall(r"k=[+-]?\d*\.\d+E[+-]\d+", label):
             selection.annotation.set_visible(False)
             return
 
+        # need to calculate overheating compared to cold wavelength
         if self.role == "LIVspectrummean":
-            selection.annotation.set_text(
-                "\n".join(
-                    [
-                        selection.artist.get_label(),
-                        f"{self.xlabel} = {selection.target[0]:.3f}",
-                        f"{self.ylabel} = {selection.target[1]:.3f}",
-                        f"ΔT, °C = {(selection.target[1]-self.cold_wavelength)/0.27:.3f}",
-                    ]
+            if self.user_defined_cold_wavelength:
+                selection.annotation.set_text(
+                    "\n".join(
+                        [
+                            selection.artist.get_label(),
+                            f"{self.xlabel} = {selection.target[0]:.3f}",
+                            f"{self.ylabel} = {selection.target[1]:.3f}",
+                            f"ΔT, °C (user defined) = {(selection.target[1]-self.cold_wavelength)/0.27:.3f}",
+                        ]
+                    )
                 )
-            )
+            else:
+                naming_pattern = r"(.*)\s\(DAT=([-+]?\d*\.?\d+)ms\)"
+                zero_pattern = r"^0+\.?0*$"
+
+                # find all labels with similar pattern
+                this_naming_match = re.search(naming_pattern, label)
+                if not this_naming_match:
+                    return
+                this_naming = this_naming_match.group(1)
+                this_DAT = this_naming_match.group(2)
+
+                # if this_DAT=0ms
+                if re.search(zero_pattern, this_DAT):
+                    selection.annotation.set_text(
+                        "\n".join(
+                            [
+                                selection.artist.get_label(),
+                                f"{self.xlabel} = {selection.target[0]:.3f}",
+                                f"{self.ylabel} = {selection.target[1]:.3f}",
+                                f"ΔT, °C (user defined) = {(selection.target[1]-self.cold_wavelength)/0.27:.3f}",
+                            ]
+                        )
+                    )
+                    return
+
+                # find all indexes with same naming, but not DAT=0ms
+                same_naming_is: List[int] = []
+                for i, _label in enumerate(self.labels):
+                    match = re.search(naming_pattern, _label)
+                    if not match:
+                        continue
+                    other_naming, other_DAT = match.group(1), match.group(2)
+                    if this_naming not in other_naming:
+                        continue
+                    if re.search(zero_pattern, other_DAT):
+                        same_naming_is.append(i)
+                    else:
+                        continue
+
+                if not same_naming_is:
+                    return
+                other_i = same_naming_is[0]
+
+                other_line = self.lines[other_i][0]
+                other_x_data = other_line.get_xdata(orig=True)
+                other_y_data = other_line.get_ydata(orig=True)
+
+                for i in range(len(other_x_data) - 1):
+                    x1, x2 = other_x_data[i], other_x_data[i + 1]
+                    y1, y2 = other_y_data[i], other_y_data[i + 1]
+                    if x1 < selection.target[0] and selection.target[0] <= x2:
+                        k = (y2 - y1) / (x2 - x1)
+                        b = y1 - k * x1
+                        other_y = k * selection.target[0] + b
+                        break
+                else:
+                    other_y = self.cold_wavelength
+
+                selection.annotation.set_text(
+                    "\n".join(
+                        [
+                            selection.artist.get_label(),
+                            f"{self.xlabel} = {selection.target[0]:.3f}",
+                            f"{self.ylabel} = {selection.target[1]:.3f}",
+                            f"ΔT, °C (calc from DAT=0ms) = {(selection.target[1]-other_y)/0.27:.3f}",
+                        ]
+                    )
+                )
+
             return
 
+        # need to calculate width of "gaussian" plot at 1/2 * max
         if self.role == "LIVintensity":
             x_data = selection.artist.get_xdata(orig=True)
             y_data = selection.artist.get_ydata(orig=True)
             y_max = np.max(y_data)
             y_half = y_max / 2
 
-            x11, x12, x21, x22 = [None]*4
-            y11, y12, y21, y22 = [None]*4
+            x11, x12, x21, x22 = [None] * 4
+            y11, y12, y21, y22 = [None] * 4
             for i in range(len(x_data) - 1):
-                x11, x12 = x_data[i], x_data[i+1]
-                y11, y12 = y_data[i], y_data[i+1]
+                x11, x12 = x_data[i], x_data[i + 1]
+                y11, y12 = y_data[i], y_data[i + 1]
                 if (y11 - y_half) * (y12 - y_half) < 0:
                     break
             else:
                 raise Exception("Could not find first half point")
-            
+
             for i in range(1, len(x_data) - 2):
-                x21, x22 = x_data[-i-1], x_data[-i]
-                y21, y22 = y_data[-i-1], y_data[-i]
+                x21, x22 = x_data[-i - 1], x_data[-i]
+                y21, y22 = y_data[-i - 1], y_data[-i]
                 if (y21 - y_half) * (y22 - y_half) < 0:
                     break
             else:
                 raise Exception("Could not find first half point")
 
-            k1 = (y12 - y11)/(x12 - x11)
-            b1 = y11 - k1*x11
-            x1 = (y_half-b1)/k1
+            k1 = (y12 - y11) / (x12 - x11)
+            b1 = y11 - k1 * x11
+            x1 = (y_half - b1) / k1
 
-            k2 = (y22 - y21)/(x22 - x21)
-            b2 = y21 - k2*x21
-            x2 = (y_half-b2)/k2
+            k2 = (y22 - y21) / (x22 - x21)
+            b2 = y21 - k2 * x21
+            x2 = (y_half - b2) / k2
 
             selection.annotation.set_text(
                 "\n".join(
@@ -521,6 +600,7 @@ class MplWidget(QWidget):
             )
             return
 
+        # default behaviour
         selection.annotation.set_text(
             "\n".join(
                 [
@@ -582,4 +662,8 @@ class MplWidget(QWidget):
         self.secxaxis = self.axes.secondary_yaxis(posidion, functions=functions)
         self.secxaxis.set_xlabel(label)
         self.controller.touch_plot.emit()
+        return
+
+    def cold_wavelength_mode_checkbox_changed_slot(self, is_user_devined: bool) -> None:
+        self.user_defined_cold_wavelength = is_user_devined
         return

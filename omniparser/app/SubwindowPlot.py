@@ -80,7 +80,7 @@ class SubwindowPlot(QMdiSubWindow):
         role_to_axes["PULSEintensity"] = ["Wavelength, nm", None, "Intensity", None]
         self.role_to_axes = role_to_axes
 
-        role_to_window_pos: Dict[str, Tuple[float, float, float, float]] = {}
+        role_to_window_pos: Dict[str, Tuple[int, int, int, int]] = {}
         role_to_window_pos["LIVpower"] = (803, 3, 800, 700)
         role_to_window_pos["LIVvoltage"] = (803, 3, 800, 700)
         role_to_window_pos["LIVspectrummean"] = (803, 3, 800, 700)
@@ -261,13 +261,24 @@ class SubwindowPlot(QMdiSubWindow):
         form.addRow("Approximation mode", approx_mode_combobox)
 
         if self.role == "LIVspectrummean":
+            self.cold_wavelength_mode_checkbox = QCheckBox()
+            self.cold_wavelength_mode_checkbox.setChecked(True)
+            form.addRow(
+                "Use user defined cold wavelength", self.cold_wavelength_mode_checkbox
+            )
+            self.cold_wavelength_mode_checkbox.stateChanged.connect(
+                lambda state: self.plot_controller.cold_wavelength_mode_checkbox_changed.emit(
+                    Qt.CheckState(state) == Qt.Checked
+                )
+            )
+
             self.cold_wavelength_edit = QLineEdit(text="805")
             self.cold_wavelength_edit.editingFinished.connect(
                 lambda edit=self.cold_wavelength_edit: self.plot_controller.cold_wavelength_changed.emit(
                     edit
                 )
             )
-            form.addRow("Cold wavelength, nm", self.cold_wavelength_edit)
+            form.addRow("User defined cold wavelength, nm", self.cold_wavelength_edit)
 
         self.table = QTableWidget()
         self.table.setColumnCount(3)
