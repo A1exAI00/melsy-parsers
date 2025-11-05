@@ -2,7 +2,7 @@
 .data-LT-GIVIK/
 .data-pulse/
 .WIP/
-*.exe
+.*/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
