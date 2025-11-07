@@ -294,3 +294,7 @@ class SubwindowSetup(QMdiSubWindow):
         }
         self.controller.after_LT_start_pressed_signal.emit(_dict)
         return
+
+    def closeEvent(self, closeEvent):
+        closeEvent.ignore()
+        return
