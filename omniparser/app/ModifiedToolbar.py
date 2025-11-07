@@ -14,6 +14,8 @@ class ModifiedToolbar(NavigationToolbar):
         """Modify this function to always save figure with the same resolution"""
         prev_width, prev_height = self.fig.get_size_inches()
         self.fig.set_size_inches(10, 8)
-        super().save_figure(*args)
+        try:
+            super().save_figure(*args)
+        except: pass
         self.fig.set_size_inches(prev_width, prev_height)
         return
