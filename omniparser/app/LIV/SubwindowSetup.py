@@ -30,8 +30,12 @@ class SubwindowSetup(QMdiSubWindow):
     def __init__(self, controller: "MainController", mdi: QMdiArea):
         self.controller = controller
         self.mdi = mdi
+
+        self.is_cooldown = False
+
         super().__init__()
         self.setup_ui()
+        self.connect_controller()
         pass
 
     def setup_ui(self) -> None:
@@ -168,24 +172,29 @@ class SubwindowSetup(QMdiSubWindow):
         return
 
     def connect_controller(self) -> None:
+        self.controller.start_cooldown_place.connect(self.start_cooldown_place_slot)
+        self.controller.start_cooldown_release.connect(self.start_cooldown_release_slot)
         return
 
     def type_prod_overwrite_slot(self) -> None:
         value = self.type_prod_overwrite_edit.text()
         for i in range(1, self.table.rowCount()):
             self.table.item(i, 2).setText(value)
+        self.controller.start_cooldown_release.emit()
         return
 
     def date_overwrite_slot(self) -> None:
         value = self.date_overwrite_edit.text()
         for i in range(1, self.table.rowCount()):
             self.table.item(i, 3).setText(value)
+        self.controller.start_cooldown_release.emit()
         return
 
     def n_rad_overwrite_slot(self) -> None:
         value = self.n_rad_overwrite_edit.text()
         for i in range(1, self.table.rowCount()):
             self.table.item(i, 4).setText(value)
+        self.controller.start_cooldown_release.emit()
         return
 
     def clear_table_slot(self) -> None:
@@ -195,6 +204,7 @@ class SubwindowSetup(QMdiSubWindow):
                 if isinstance(item, QTableWidgetItem):
                     item.setText("")
                     item.setToolTip("")
+        self.controller.start_cooldown_release.emit()
         return
 
     def add_row_slot(self) -> None:
@@ -213,7 +223,6 @@ class SubwindowSetup(QMdiSubWindow):
         return
 
     def edit_path_slot(self, row_index: int) -> None:
-        self.controller.start_cooldown_release.emit()
         match self.work_mode_combo.currentIndex():
             case 0:  # File mode
                 self.edit_path_file_mode(row_index)
@@ -221,6 +230,7 @@ class SubwindowSetup(QMdiSubWindow):
                 self.edit_path_other_modes(row_index, recursive=False)
             case 2:  # Recursive mode
                 self.edit_path_other_modes(row_index, recursive=True)
+        self.controller.start_cooldown_release.emit()
         return
 
     def edit_path_file_mode(self, row_index: int) -> None:
@@ -270,6 +280,7 @@ class SubwindowSetup(QMdiSubWindow):
             for i in range(len(parents_basenames)):
                 item = self.table.item(current_row, 2 + i)
                 item.setText(list(reversed(parents_basenames))[i])
+        self.controller.start_cooldown_release.emit()
         return
 
     def edit_path_other_modes(self, row_index: int, recursive: bool = False) -> None:
@@ -312,6 +323,7 @@ class SubwindowSetup(QMdiSubWindow):
             for i in range(len(parents_basenames)):
                 item = self.table.item(current_row, 2 + i)
                 item.setText(list(reversed(parents_basenames))[i])
+        self.controller.start_cooldown_release.emit()
         return
 
     def parse(self) -> List[LIVdata]:
@@ -342,6 +354,9 @@ class SubwindowSetup(QMdiSubWindow):
         return datas
 
     def start_slot(self) -> None:
+        if self.is_cooldown:
+            return
+        self.controller.start_cooldown_place.emit()
         datas = self.parse()
         _dict = {
             "datas": datas,
@@ -353,4 +368,14 @@ class SubwindowSetup(QMdiSubWindow):
 
     def closeEvent(self, closeEvent):
         closeEvent.ignore()
+        return
+
+    def start_cooldown_place_slot(self) -> None:
+        self.is_cooldown = True
+        print("Place cooldown")
+        return
+
+    def start_cooldown_release_slot(self) -> None:
+        self.is_cooldown = False
+        print("Release cooldown")
         return

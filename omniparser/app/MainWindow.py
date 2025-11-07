@@ -26,8 +26,6 @@ class MainWindow(QMainWindow):
         self.window_title = "melsytech Omniparser"
         self.plot_windows: Dict[str, QMdiSubWindow] = {}
 
-        self.start_cooldown_active = False
-
         self.result_windows = []
         self.setup_ui()
         self.connect_controller()
@@ -115,29 +113,19 @@ class MainWindow(QMainWindow):
         self.controller.after_PULSE_start_pressed_signal.connect(
             self.after_PULSE_start_pressed_slot
         )
-        self.controller.start_cooldown_release.connect(self.start_cooldown_release_slot)
         return
 
     def after_LIV_start_pressed_slot(self, _dict) -> None:
-        if not self.start_cooldown_active:
-            self.start_cooldown_active = True
-            self.create_and_append_LIV_result_window(_dict)
+        self.create_and_append_LIV_result_window(_dict)
         return
 
     def after_LT_start_pressed_slot(self, _dict) -> None:
-        if not self.start_cooldown_active:
-            self.start_cooldown_active = True
-            self.create_and_append_LT_result_window(_dict)
+        self.create_and_append_LT_result_window(_dict)
         return
     
     def after_PULSE_start_pressed_slot(self, _dict) -> None:
-        if not self.start_cooldown_active:
-            self.start_cooldown_active = True
-            self.create_and_append_PULSE_result_window(_dict)
+        self.create_and_append_PULSE_result_window(_dict)
         return
-
-    def start_cooldown_release_slot(self) -> None:
-        self.start_cooldown_active = False
 
     def create_and_append_LIV_result_window(self, _dict) -> None:
         index = len(self.result_windows)
